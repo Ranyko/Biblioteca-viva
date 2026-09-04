@@ -233,90 +233,83 @@ WHERE status = 'disponivel';
 
 -- Seed de exemplo
 
+-- Configuração única
 INSERT INTO configuracao_biblioteca (
-    id,
-    prazo_emprestimo_dias,
-    limite_emprestimos,
-    valor_multa_dia,
-    prazo_retirada_reserva_dias
-)
-VALUES (
-    1,
-    14,
-    3,
-    2.50,
-    2
-);
+    id, prazo_emprestimo_dias, limite_emprestimos, valor_multa_dia, prazo_retirada_reserva_dias
+) VALUES (1, 14, 3, 2.50, 2);
 
-INSERT INTO usuario (
-    nome,
-    email,
-    senha_hash,
-    perfil
-)
+-- Usuários (admin, atendentes, leitores)
+INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES
+('Administrador', 'admin@biblioteca.com', '$2a$10$hash_exemplo', 'administrador'),
+('João Silva', 'joao@biblioteca.com', '$2a$10$hash_exemplo', 'leitor'),
+('Maria Souza', 'maria@biblioteca.com', '$2a$10$hash_exemplo', 'leitor'),
+('Carlos Pereira', 'carlos@biblioteca.com', '$2a$10$hash_exemplo', 'atendente'),
+('Ana Oliveira', 'ana@biblioteca.com', '$2a$10$hash_exemplo', 'atendente');
+
+-- Leitores
+INSERT INTO leitor (usuario_id, documento, telefone) VALUES
+(2, '12345678900', '(16)99999-9999'),
+(3, '98765432100', '(16)98888-8888');
+
+-- Autores
+INSERT INTO autor (nome) VALUES
+('Machado de Assis'),
+('Clarice Lispector'),
+('José de Alencar'),
+('Graciliano Ramos');
+
+-- Categorias
+INSERT INTO categoria (nome) VALUES
+('Literatura Brasileira'),
+('Romance'),
+('Contos'),
+('Infantojuvenil'),
+('Modernismo');
+
+-- Livros
+INSERT INTO livro (titulo, isbn, ano_publicacao, descricao) VALUES
+('Dom Casmurro', '1234567890123', 1899, 'Romance clássico da literatura brasileira.'),
+('A Hora da Estrela', '9876543210123', 1977, 'Obra marcante de Clarice Lispector.'),
+('Iracema', '1111111111111', 1865, 'Romance indianista de José de Alencar.'),
+('Vidas Secas', '2222222222222', 1938, 'Obra de Graciliano Ramos sobre a seca no sertão.');
+
+-- Relações livro_autor
+INSERT INTO livro_autor (livro_id, autor_id) VALUES
+(1,1),
+(2,2),
+(3,3),
+(4,4);
+
+-- Relações livro_categoria
+INSERT INTO livro_categoria (livro_id, categoria_id) VALUES
+(1,1),(1,2),
+(2,1),(2,3),
+(3,1),(3,2),
+(4,1),(4,5);
+
+-- Exemplares
+INSERT INTO exemplar (livro_id, codigo_tombo, estado_conservacao, status) VALUES
+(1, 'TOMBO-0001', 'novo', 'disponivel'),
+(1, 'TOMBO-0002', 'bom', 'emprestado'),
+(2, 'TOMBO-0003', 'regular', 'disponivel'),
+(2, 'TOMBO-0004', 'danificado', 'inativo'),
+(3, 'TOMBO-0005', 'bom', 'reservado'),
+(4, 'TOMBO-0006', 'novo', 'disponivel');
+
+-- Empréstimos
+INSERT INTO emprestimo (leitor_id, exemplar_id, atendente_retirada_id, data_prevista_devolucao)
 VALUES
-(
-    'Administrador',
-    'admin@biblioteca.com',
-    '$2a$10$hash_exemplo',
-    'administrador'
-),
-(
-    'João Silva',
-    'joao@biblioteca.com',
-    '$2a$10$hash_exemplo',
-    'leitor'
-);
+(1, 2, 4, CURRENT_DATE + INTERVAL '14 days'),
+(2, 3, 5, CURRENT_DATE + INTERVAL '14 days');
 
-INSERT INTO leitor (
-    usuario_id,
-    documento,
-    telefone
-)
-VALUES (
-    2,
-    '12345678900',
-    '(16)99999-9999'
-);
+-- Reservas
+INSERT INTO reserva (leitor_id, livro_id, status, data_solicitacao)
+VALUES
+(1, 4, 'ativa', CURRENT_TIMESTAMP),
+(2, 1, 'disponivel', CURRENT_TIMESTAMP);
 
-INSERT INTO autor (nome)
-VALUES ('Machado de Assis');
-
-INSERT INTO categoria (nome)
-VALUES ('Literatura Brasileira');
-
-INSERT INTO livro (
-    titulo,
-    isbn,
-    ano_publicacao,
-    descricao
-)
-VALUES (
-    'Dom Casmurro',
-    '1234567890123',
-    1899,
-    'Romance clássico da literatura brasileira.'
-);
-
-INSERT INTO livro_autor (
-    livro_id,
-    autor_id
-)
-VALUES (1,1);
-
-INSERT INTO livro_categoria (
-    livro_id,
-    categoria_id
-)
-VALUES (1,1);
-
-INSERT INTO exemplar (
-    livro_id,
-    codigo_tombo,
-    estado_conservacao
-)
-VALUES (
-    1,
-    'TOMBO-0001',
-    'novo'
-);
+-- Multas
+INSERT INTO multa (emprestimo_id, dias_atraso, valor_diario_aplicado, status)
+VALUES
+(1, 3, 2.50, 'pendente'),
+(2, 1, 2.50, 'quitada');
