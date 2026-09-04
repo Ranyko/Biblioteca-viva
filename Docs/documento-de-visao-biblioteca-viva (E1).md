@@ -7,7 +7,9 @@
 
 ## 1. Problema
 
-Bibliotecas comunitárias costumam trabalhar com poucos recursos e podem controlar o acervo, os leitores e os empréstimos por meio de cadernos ou planilhas. Esse processo dificulta saber rapidamente quais exemplares estão disponíveis, quem está com cada item e quais devoluções estão atrasadas. Reservas também podem se perder ou ser atendidas fora da ordem, enquanto o cálculo manual de multas aumenta a chance de erros e retrabalho. Além disso, sem um histórico centralizado, torna-se difícil identificar os livros mais procurados, acompanhar o uso do acervo e oferecer sugestões de leitura adequadas aos interesses de cada leitor.
+Bibliotecas comunitárias costumam trabalhar com poucos recursos e podem controlar o acervo, os leitores e os empréstimos por meio de cadernos ou planilhas. Esse processo dificulta saber rapidamente quais exemplares estão disponíveis, quem está com cada item e quais devoluções estão atrasadas. Reservas também podem se perder ou ser atendidas fora da ordem, enquanto o cálculo manual de multas aumenta a chance de erros e retrabalho. Além disso, sem um histórico centralizado, torna-se difícil identificar os livros mais procurados, acompanhar o uso do acervo e oferecer sugestões de leitura adequadas aos interesses de cada leitor. 
+
+Como não houve levantamento em uma biblioteca real, o projeto adotará como cenário de referência uma biblioteca comunitária com até 1.000 obras, 2.000 exemplares e 500 leitores cadastrados, realizando aproximadamente 100 empréstimos por semana e mantendo até 20 reservas simultâneas. Para validar os fluxos relacionados a atrasos, a massa de testes deverá conter pelo menos 100 empréstimos históricos, incluindo 15 devoluções atrasadas. Esses valores representam parâmetros de dimensionamento e validação do MVP, não dados obtidos por pesquisa de campo.
 
 ## 2. Público-alvo e perfis de usuário
 
@@ -23,12 +25,12 @@ O Biblioteca Viva será um sistema web para centralizar o controle do acervo e o
 
 ## 4. Objetivos do MVP
 
-- Centralizar em um único sistema o cadastro de leitores, obras, autores, categorias e exemplares.
-- Permitir a consulta imediata da disponibilidade de cada obra e impedir o empréstimo de exemplar indisponível.
-- Organizar as reservas por ordem de solicitação e priorizar automaticamente o primeiro leitor da fila quando houver devolução.
-- Identificar devoluções atrasadas e calcular automaticamente a multa conforme a quantidade de dias de atraso.
-- Disponibilizar um painel com empréstimos ativos e atrasados, obras mais emprestadas e movimentação por categoria.
-- Apresentar sugestões de leitura com base nas categorias presentes no histórico do leitor.
+- Centralizar em uma única base 100% dos leitores, obras, autores, categorias e exemplares utilizados na validação do MVP, impedindo duplicidades de e-mail, documento, ISBN e código de tombo.
+- Permitir a consulta da disponibilidade de uma obra em até 3 segundos no ambiente de testes e bloquear 100% das tentativas de empréstimo de exemplares indisponíveis previstas nos casos de teste.
+- Manter a ordem de solicitação em 100% dos cenários de reserva testados e alocar o próximo exemplar disponível ao primeiro leitor elegível da fila.
+- Identificar corretamente todas as devoluções atrasadas dos casos de teste e calcular a multa pela fórmula `dias de atraso × valor diário configurado`, sem necessidade de cálculo manual.
+- Apresentar no painel pelo menos quatro indicadores: total de empréstimos ativos, total de empréstimos atrasados, cinco obras mais emprestadas e movimentações agrupadas por categoria.
+- Apresentar ao leitor até cinco sugestões de obras disponíveis pertencentes às categorias mais presentes em seu histórico de empréstimos.
 
 ## 5. Fora de escopo
 
