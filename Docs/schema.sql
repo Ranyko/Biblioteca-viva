@@ -1,5 +1,5 @@
 -- =====================================================
--- DER — Biblioteca Viva
+-- DDL — Biblioteca Viva
 -- =====================================================
 -- Equipe: Raniery Chiarelli (2840482321007) — Vinicius Rocha (2840482523051) — Isaac Leonardo da Silva (2840482421016)
 -- Trilha: B
