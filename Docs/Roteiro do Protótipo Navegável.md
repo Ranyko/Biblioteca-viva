@@ -11,9 +11,10 @@
 |---|---|---|---|
 |Login | Todos | #1 | Autenticação por e-mail e senha para acesso ao sistema conforme o perfil do usuário. |
 |Dashboard Administrativo |	Administrador |	#14 | Exibe indicadores da biblioteca, empréstimos por categoria e ranking das obras mais emprestadas. |
-|Gerenciar Usuários | Administrador | #2, #3 | Permite cadastrar e gerenciar usuários do sistema, definindo nome, e-mail, perfil e situação. O perfil Leitor também pode ser criado nesta tela, atendendo ao cadastro de leitores da biblioteca. |
+|Gerenciar Usuários | Administrador | #2 | Lista os usuários cadastrados, exibindo nome, e-mail, perfil e situação (ativo/inativo). |
 |Gerenciar Livros |	Administrador |	#4 | Permite consultar os livros cadastrados, visualizando título, ISBN, autor e categoria. |
 |Cadastrar Livro | Administrador | #4 | Formulário para cadastro de livros contendo título, ISBN, autor e categoria. |
+|Cadastrar Usuário | Administrador | #3 | Permite cadastrar usuários do sistema, definindo nome, e-mail, senha e perfil. |
 |Gerenciar Exemplares |	Administrador |	#5 | Exibe os exemplares cadastrados, com código, estado de conservação e status de disponibilidade. |
 |Acervo	| Leitor | #6 | Permite pesquisar obras do acervo e visualizar disponibilidade de exemplares. |
 |Detalhes da Obra |	Leitor | #6, #9 | Apresenta informações detalhadas da obra, quantidade de exemplares disponíveis e opção de reserva. |
