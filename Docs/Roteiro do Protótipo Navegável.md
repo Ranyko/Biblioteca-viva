@@ -15,7 +15,7 @@
 |Gerenciar Livros |	Administrador |	#4 | Permite consultar os livros cadastrados, visualizando título, ISBN, autor e categoria. |
 |Cadastrar Livro | Administrador | #4 | Formulário para cadastro de livros contendo título, ISBN, autor e categoria. |
 |Gerenciar Exemplares |	Administrador |	#5 | Exibe os exemplares cadastrados, com código, estado de conservação e status de disponibilidade. |
-|Acervo	Leitor | #6 | Permite pesquisar obras do acervo e visualizar disponibilidade de exemplares. |
+|Acervo	| Leitor | #6 | Permite pesquisar obras do acervo e visualizar disponibilidade de exemplares. |
 |Detalhes da Obra |	Leitor | #6, #9 | Apresenta informações detalhadas da obra, quantidade de exemplares disponíveis e opção de reserva. |
 |Registro de Empréstimo | Atendente | #7 | Permite selecionar leitor e exemplar para registrar um empréstimo, exibindo automaticamente as datas de retirada e devolução. |
 |Registro de Devolução | Atendente | #8, #11 | Permite registrar a devolução de um exemplar, calculando atraso e multa automaticamente. |
