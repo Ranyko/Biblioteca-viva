@@ -5,7 +5,7 @@ Sistema web para apoiar o controle de uma biblioteca comunitária, permitindo or
 > O projeto encontra-se na etapa de modelagem e preparação. A implementação do frontend e do backend será iniciada na Sprint 1.
 
 **Deploy:** ainda não publicado — previsto para as próximas sprints.  
-**Protótipo:** [INSERIR LINK DO FIGMA OU PENPOT]  
+**Protótipo:** [Acessar protótipo no Figma](https://www.figma.com/design/rgYUfA1fHxxX0ikOd6rTjd/Prot%C3%B3tipo-Naveg%C3%A1vel---Biblioteca-Viva?node-id=0-1&p=f)
 
 ## Equipe
 
@@ -47,7 +47,7 @@ O detalhamento das funcionalidades, prioridades e critérios de aceite está dis
 | Banco de dados | PostgreSQL 15+ |
 | Autenticação | Spring Security + JWT |
 | Versionamento | Git + GitHub |
-| Deploy | Vercel para frontend; Render para backend; Neon para o banco de dados|
+| Deploy | Vercel para frontend; Render para backend; Neon para o banco de dados |
 
 
 ## Estado atual
@@ -85,15 +85,14 @@ biblioteca-viva/
 ### Pré-requisitos
 
 - Git 2.5 ou superior;
-- Docker Desktop com Docker Compose;
+- Docker Desktop;
 - um terminal, como PowerShell, Prompt de Comando, Bash ou Terminal do macOS.
 
 ### 1. Clonar o repositório
 
-Substitua o endereço abaixo pela URL oficial do GitHub:
 
 ```bash
-git clone https://github.com/Ranyko/Biblioteca-viva
+git clone https://github.com/Ranyko/Biblioteca-viva.git biblioteca-viva
 cd biblioteca-viva
 ```
 
@@ -130,7 +129,7 @@ docker start biblioteca-viva-db
 Copie o arquivo SQL para dentro do container:
 
 ```bash
-docker cp db/schema.sql biblioteca-db:/tmp/schema.sql
+docker cp db/schema.sql biblioteca-viva-db:/tmp/schema.sql
 ```
 
 Execute o script no banco `biblioteca_viva`:
@@ -201,9 +200,9 @@ Os comandos dos testes automatizados serão adicionados quando os projetos de fr
 
 ## Protótipo
 
-O índice das telas, os perfis envolvidos e a relação com as histórias do backlog estão disponíveis em `docs/prototipo.md`.
 
-O protótipo navegável será publicado no Figma ou Penpot com acesso de visualização liberado.
+O protótipo navegável está publicado no Figma com acesso de visualização liberado. <br>
+Além disso, o protótipo possui uma tela exclusiva para seleção do fluxo de navegação. Essa tela serve apenas para facilitar a visualização dos perfis Leitor, Atendente e Administrador e não fará parte da aplicação final. No sistema implementado, o fluxo será definido pelo perfil do usuário autenticado.
 
 ## Licença
 
