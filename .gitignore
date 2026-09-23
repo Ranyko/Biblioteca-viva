@@ -46,3 +46,4 @@ application-dev.yml
 
 ### Planejamento pessoal (nao versionar) ###
 /planejamento-backend/
+/correcoes/
