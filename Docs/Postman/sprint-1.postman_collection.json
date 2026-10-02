@@ -1,0 +1,519 @@
+{
+  "info": {
+    "name": "Biblioteca Viva — Sprint 1 (H1–H3)",
+    "description": "Roteiro para repetir os quatro fluxos manuais da Sprint 1 e conferir a persistência nas requisições 09/10. Os resultados da sprint estão reunidos no documento de evidências. Executar na ordem com API e banco locais; tokens ficam em variáveis locais e não devem ser exportados.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAntigo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuarioTesteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leitorId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "autorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoriaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "livroId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "exemplarId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "emprestimoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leitorEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "duplicadoEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentoTeste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tituloTeste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tomboTeste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "isbnTeste",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Sprint 1 — evidências pendentes",
+      "item": [
+        {
+          "name": "01 Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@biblioteca.com\",\n  \"senha\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = String(Date.now());",
+                  "pm.collectionVariables.set(\"staffEmail\", \"s1-atendente-\" + s + \"@teste.com\");",
+                  "pm.collectionVariables.set(\"leitorEmail\", \"s1-leitor-\" + s + \"@teste.com\");",
+                  "pm.collectionVariables.set(\"duplicadoEmail\", \"s1-duplicado-\" + s + \"@teste.com\");",
+                  "pm.collectionVariables.set(\"documentoTeste\", \"S1\" + s);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "pm.collectionVariables.set(\"adminToken\", pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Criar atendente de teste",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/usuarios",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Atendente teste Sprint 1\",\n  \"email\": \"{{staffEmail}}\",\n  \"senha\": \"password\",\n  \"perfil\": \"atendente\",\n  \"ativo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "pm.collectionVariables.set(\"usuarioTesteId\", pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Emitir token antes da inativação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{staffEmail}}\",\n  \"senha\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "pm.collectionVariables.set(\"tokenAntigo\", pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Atualizar usuário — captura 12",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/usuarios/{{usuarioTesteId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Atendente teste editado\",\n  \"email\": \"{{staffEmail}}\",\n  \"perfil\": \"atendente\",\n  \"ativo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "pm.test(\"Nome atualizado\", () => pm.expect(pm.response.json().nome).to.eql(\"Atendente teste editado\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Inativar usuário — captura 13",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/usuarios/{{usuarioTesteId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Atendente teste editado\",\n  \"email\": \"{{staffEmail}}\",\n  \"perfil\": \"atendente\",\n  \"ativo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "pm.test(\"Inativo\", () => pm.expect(pm.response.json().ativo).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Usar token antigo — captura 14",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/atendente/painel",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAntigo}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "if (pm.response.code === 401) {",
+                  "",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Cadastrar leitor — captura 15",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/atendente/leitores",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Leitor teste Sprint 1\",\n  \"email\": \"{{leitorEmail}}\",\n  \"senha\": \"password\",\n  \"documento\": \"{{documentoTeste}}\",\n  \"telefone\": \"16999999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "const r=pm.response.json(); pm.collectionVariables.set(\"leitorId\",r.id);",
+                  "pm.test(\"Leitor ativo e senha omitida\",()=>{ pm.expect(r.ativo).to.eql(true); pm.expect(r).not.to.have.property(\"senha\"); pm.expect(r).not.to.have.property(\"senhaHash\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 CT03 documento duplicado — captura 16",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/atendente/leitores",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Leitor teste Sprint 1\",\n  \"email\": \"{{duplicadoEmail}}\",\n  \"senha\": \"password\",\n  \"documento\": \"{{documentoTeste}}\",\n  \"telefone\": \"16999999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.response.to.have.status(409); });",
+                  "if (pm.response.code === 409) {",
+                  "",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Conferir leitor único",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/atendente/leitores",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "pm.test(\"Um cadastro para o documento\",()=>pm.expect(pm.response.json().filter(r=>r.documento===pm.collectionVariables.get(\"documentoTeste\")).length).to.eql(1));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Conferir que tentativa recusada não criou usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/admin/usuarios",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "pm.test(\"Usuário duplicado não criado\",()=>pm.expect(pm.response.json().some(r=>r.email===pm.collectionVariables.get(\"duplicadoEmail\"))).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 **Equipe:** Raniery Chiarelli (2840482321007) — Vinicius Rocha (2840482523051) — Isaac Leonardo da Silva (2840482421016)  
 **Trilha:** B  
 **Origem:** Banco de temas nº 9 — Controle de biblioteca comunitária  
-**Data:** 28/08/2026
+**Data:** 28/08/2026o
 
 ## 1. Escopo aceito para o semestre (funcionalidades Must + Should)
 

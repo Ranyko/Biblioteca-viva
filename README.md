@@ -4,7 +4,9 @@ API do sistema de controle de biblioteca comunitária desenvolvido na disciplina
 
 ## Estado atual
 
-Este pacote contém a implementação das funcionalidades abaixo. Na revisão assistida, os 11 testes unitários passaram com Java 17. A execução com JDK 21, PostgreSQL e a demonstração HTTP ainda precisa ser validada pela equipe.
+O backend da Sprint 1 inclui autenticação, usuários e leitores. A validação local registrou PostgreSQL saudável, inicialização da API, 11 testes unitários aprovados e nove verificações HTTP aprovadas pelo script PowerShell. Os fluxos do Postman demonstram autenticação, autorização, criação/atualização/inativação de usuário, bloqueio do token anterior à inativação, cadastro de leitor e rejeição de documento duplicado.
+
+Os resultados registrados em 23/09/2026 e 02/10/2026 foram reunidos nas [Evidências da Sprint 1](Docs/Sprints/Sprint-1/sprint-1-evidencias-teste.md), com uma tabela única e 17 arquivos de evidência.
 
 Funcionalidades implementadas:
 
@@ -19,7 +21,7 @@ Funcionalidades implementadas:
 - criação e versionamento do banco PostgreSQL com Flyway;
 - testes unitários do login, token e filtro de segurança.
 
-Não existe cadastro público. Funcionários são criados pelo administrador e leitores são cadastrados pelo atendente ou administrador. As telas React ainda precisam ser conectadas a esta API.
+Não existe cadastro público. Funcionários são criados pelo administrador e leitores são cadastrados pelo atendente ou administrador. A integração com as telas React não foi verificada nesta entrega de backend.
 
 ## Tecnologias
 
@@ -185,16 +187,19 @@ No Windows:
 .\mvnw.cmd test
 ```
 
-Os testes automatizados cobrem credenciais válidas e inválidas, usuário inativo, assinatura e expiração do JWT, identificação pelo ID, carregamento de autoridade pelo filtro e compatibilidade da senha de demonstração com BCrypt. Os testes manuais de autorização estão descritos em `docs/sprints/sprint-1-evidencias-teste.md`.
+Os testes automatizados cobrem credenciais válidas e inválidas, usuário inativo, assinatura e expiração do JWT, identificação pelo ID, carregamento de autoridade pelo filtro e compatibilidade da senha de demonstração com BCrypt. O resultado registrado é de 11 testes aprovados, sem falhas ou erros.
+
+As [Evidências da Sprint 1](Docs/Sprints/Sprint-1/sprint-1-evidencias-teste.md) registram os testes de autenticação e autorização, os retornos HTTP 200 na atualização e inativação de usuário, HTTP 401 com o token anterior à inativação, HTTP 201 no cadastro de leitor e HTTP 409 para documento duplicado.
+
+Os fluxos HTTP demonstrados estão reunidos na [coleção Postman da Sprint 1](Docs/Postman/sprint-1.postman_collection.json), com os resultados registrados nas evidências.
 
 ## Documentos da E5
 
-- [Relatório da Sprint 1](docs/sprints/sprint-1-relatorio.md)
-- [Backlog atualizado](docs/backlog.md)
-- [Evidências de teste](docs/sprints/sprint-1-evidencias-teste.md)
-- [Ata de retrospectiva](docs/sprints/sprint-1-retrospectiva.md)
-- [Relatórios individuais e roteiro da review](docs/sprints/README.md)
-- [Guia das Sprints 1–4](docs/GUIA_DAS_SPRINTS.md)
+- [Relatório da Sprint 1](Docs/Sprints/Sprint-1/sprint-1-relatorio.md)
+- [Backlog da E2](Docs/E1-E4/backlog-biblioteca-viva%28E2%29.md)
+- [Evidências de teste](Docs/Sprints/Sprint-1/sprint-1-evidencias-teste.md)
+- [Retrospectiva individual](Docs/Sprints/Sprint-1/sprint-1-retrospectiva.md)
+- [Relatório individual de Raniery](Docs/Sprints/Sprint-1/sprint-1-contribuicao-raniery.md)
 
 ## Estrutura principal
 
@@ -212,11 +217,11 @@ src/main/java/br/com/bibliotecaviva/
 
 O arquivo `db/schema.sql` contém o DDL e o seed atualizado para um banco vazio. Na aplicação, use apenas as migrações em `src/main/resources/db/migration`. A V1 original foi preservada para manter seu checksum; a V2 corrige o hash sem recriar tabelas. Por isso, o SQL avulso representa o resultado de V1 + V2 e não é idêntico à V1.
 
-A revisão e suas limitações estão em [REVISAO_E5.md](REVISAO_E5.md).
+O estado da entrega, as limitações e os itens replanejados estão registrados no [Relatório da Sprint 1](Docs/Sprints/Sprint-1/sprint-1-relatorio.md).
 
-## Próximos incrementos
+## Escopo além desta entrega de backend
 
-- integrar as telas React ao backend;
+- verificar os fluxos integrados das telas React com o backend;
 - implementar livros, autores, categorias e exemplares;
 - implementar empréstimos, devoluções, reservas e multas;
 - adicionar testes de integração com PostgreSQL;
@@ -224,7 +229,7 @@ A revisão e suas limitações estão em [REVISAO_E5.md](REVISAO_E5.md).
 
 ## Equipe
 
-- Raniery Chiarelli Barbosa — RA 2840482321007
+- Raniery Chiarelli — RA 2840482321007
 - Vinicius Rocha — RA 2840482523051
 - Isaac Leonardo da Silva — RA 2840482421016
 
