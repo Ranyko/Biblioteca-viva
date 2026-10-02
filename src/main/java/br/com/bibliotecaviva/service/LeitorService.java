@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.bibliotecaviva.dto.LeitorCreateRequest;
 import br.com.bibliotecaviva.dto.LeitorResponse;
 import br.com.bibliotecaviva.exception.ConflitoException;
+import br.com.bibliotecaviva.exception.RecursoNaoEncontradoException;
 import br.com.bibliotecaviva.model.Leitor;
 import br.com.bibliotecaviva.model.PerfilUsuario;
 import br.com.bibliotecaviva.model.Usuario;
@@ -55,5 +56,13 @@ public class LeitorService {
         leitor.setDocumento(documento);
         leitor.setTelefone(request.telefone() == null ? null : request.telefone().trim());
         return LeitorResponse.from(leitorRepository.save(leitor));
+    }
+
+    @Transactional(readOnly = true)
+        public Leitor buscarEntidade(Long id) {
+            return leitorRepository.findById(id)
+                .orElseThrow(() -> 
+                        new RecursoNaoEncontradoException( 
+                                "Leitor não encontrado"));
     }
 }
