@@ -1,0 +1,43 @@
+name: Backend - testes
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: biblioteca_sprint2_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d biblioteca_sprint2_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SPRINT2_TEST_DB_URL: jdbc:postgresql://localhost:5432/biblioteca_sprint2_test
+      SPRINT2_TEST_DB_USER: postgres
+      SPRINT2_TEST_DB_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Testes e empacotamento
+        run: ./mvnw -B -ntp verify
+      - name: Evidências do resultado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-backend
+          path: target/surefire-reports/
