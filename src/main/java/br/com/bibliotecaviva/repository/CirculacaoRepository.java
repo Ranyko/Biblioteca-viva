@@ -80,6 +80,19 @@ public class CirculacaoRepository {
                 rs.getObject("data_limite_retirada", OffsetDateTime.class)), exemplarId).stream().findFirst();
     }
 
+    public void travarLeitoresDaFila(long livroId) {
+        List<Long> leitores = jdbc.query("""
+            SELECT le.id FROM leitor le
+            WHERE EXISTS (
+                SELECT 1 FROM reserva r
+                WHERE r.leitor_id = le.id AND r.livro_id = ? AND r.status = 'ativa'
+            )
+            ORDER BY le.usuario_id, le.id
+            """, (rs, n) -> rs.getLong("id"), livroId);
+        // Mesma ordem de usuários em filas diferentes; usuário antes do leitor, como na retirada.
+        leitores.forEach(this::travarLeitor);
+    }
+
     public Optional<Long> primeiraReservaElegivel(long livroId, int limite) {
         return jdbc.query("""
             SELECT r.id FROM reserva r JOIN leitor le ON le.id = r.leitor_id JOIN usuario u ON u.id = le.usuario_id

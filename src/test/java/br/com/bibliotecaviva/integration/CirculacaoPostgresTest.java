@@ -3,6 +3,7 @@ package br.com.bibliotecaviva.integration;
 import java.time.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +18,14 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 import br.com.bibliotecaviva.repository.UsuarioRepository;
+import br.com.bibliotecaviva.dto.EmprestimoCreateRequest;
+import br.com.bibliotecaviva.service.CirculacaoService;
 import br.com.bibliotecaviva.service.TokenService;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -51,6 +57,8 @@ class CirculacaoPostgresTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired UsuarioRepository usuarios;
     @Autowired TokenService tokens;
+    @Autowired CirculacaoService circulacao;
+    @Autowired PlatformTransactionManager transactions;
     MockMvc mvc;
     String atendente;
     String leitor;
@@ -170,6 +178,92 @@ class CirculacaoPostgresTest {
             .andExpect(jsonPath("$.reservaDisponibilizadaId").value(2));
         assertEquals("ativa", jdbc.queryForObject("SELECT status FROM reserva WHERE id = 1", String.class));
         assertEquals(2L, jdbc.queryForObject("SELECT exemplar_id FROM reserva WHERE id = 2", Long.class));
+    }
+    private void filaComMariaAntesDeJoao() {
+        jdbc.update("""
+            INSERT INTO reserva(leitor_id, livro_id, data_solicitacao)
+            VALUES (2, 1, '2026-09-01T10:00:00Z'), (1, 1, '2026-09-02T10:00:00Z')
+            """);
+    }
+    private void aguardarBloqueioDoLeitor(int pid, Future<?> devolucao) {
+        long limite = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < limite) {
+            assertFalse(devolucao.isDone(), "Devolução concluiu sem aguardar a alteração do leitor");
+            if (Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM pg_stat_activity WHERE ? = ANY(pg_blocking_pids(pid))
+                )
+                """, Boolean.class, pid))) return;
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(20));
+        }
+        fail("Devolução não aguardou o bloqueio do leitor dentro do prazo");
+    }
+    private MvcResult devolverDuranteAlteracaoDoLeitor(Runnable alteracao) throws Exception {
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            Future<MvcResult> devolucao = new TransactionTemplate(transactions).execute(status -> {
+                alteracao.run();
+                int pid = jdbc.queryForObject("SELECT pg_backend_pid()", Integer.class);
+                Future<MvcResult> resultado = pool.submit(() -> mvc.perform(
+                    post("/atendente/emprestimos/1/devolucao").header("Authorization", atendente)).andReturn());
+                aguardarBloqueioDoLeitor(pid, resultado);
+                return resultado;
+            });
+            return devolucao.get(10, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+            assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS), "Devolução não encerrou após liberar a transação");
+        }
+    }
+    private void conferirReservaDoSegundoDaFila(MvcResult resposta) throws Exception {
+        status().isOk().match(resposta);
+        jsonPath("$.statusExemplar").value("reservado").match(resposta);
+        jsonPath("$.reservaDisponibilizadaId").value(2).match(resposta);
+        assertEquals("ativa", jdbc.queryForObject("SELECT status FROM reserva WHERE id = 1", String.class));
+        assertNull(jdbc.queryForObject("SELECT exemplar_id FROM reserva WHERE id = 1", Long.class));
+        assertEquals(2L, jdbc.queryForObject("SELECT exemplar_id FROM reserva WHERE id = 2", Long.class));
+    }
+    @Test void devolucaoAguardaInativacaoConcorrenteEReavaliaFila() throws Exception {
+        filaComMariaAntesDeJoao();
+        var resposta = devolverDuranteAlteracaoDoLeitor(() ->
+            jdbc.update("UPDATE usuario SET ativo = FALSE WHERE id = 3"));
+        conferirReservaDoSegundoDaFila(resposta);
+    }
+    @Test void devolucaoAguardaEmprestimoConcorrenteERecontaLimite() throws Exception {
+        filaComMariaAntesDeJoao();
+        jdbc.update("UPDATE configuracao_biblioteca SET limite_emprestimos = 1");
+        var resposta = devolverDuranteAlteracaoDoLeitor(() ->
+            circulacao.emprestar(new EmprestimoCreateRequest(2L, 3L), 4));
+        conferirReservaDoSegundoDaFila(resposta);
+        assertEquals(1L, jdbc.queryForObject(
+            "SELECT count(*) FROM emprestimo WHERE leitor_id = 2 AND data_devolucao IS NULL", Long.class));
+    }
+    @Test void devolucoesSimultaneasComFilasInvertidasPreservamPrioridade() throws Exception {
+        jdbc.update("UPDATE exemplar SET status = 'emprestado' WHERE id = 3");
+        jdbc.update("""
+            INSERT INTO emprestimo(leitor_id, exemplar_id, atendente_retirada_id,
+                data_retirada, data_prevista_devolucao)
+            VALUES (1, 3, 4, '2026-09-10T10:00:00-03:00', '2026-10-01')
+            """);
+        jdbc.update("""
+            INSERT INTO reserva(leitor_id, livro_id, data_solicitacao) VALUES
+            (2, 1, '2026-09-01T10:00:00Z'), (1, 1, '2026-09-02T10:00:00Z'),
+            (1, 2, '2026-09-01T10:00:00Z'), (2, 2, '2026-09-02T10:00:00Z')
+            """);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch largada = new CountDownLatch(1);
+        try {
+            var primeira = pool.submit(() -> { largada.await(); return circulacao.devolver(1, 4); });
+            var segunda = pool.submit(() -> { largada.await(); return circulacao.devolver(2, 4); });
+            largada.countDown();
+            assertEquals(1L, primeira.get(15, TimeUnit.SECONDS).reservaDisponibilizadaId());
+            assertEquals(3L, segunda.get(15, TimeUnit.SECONDS).reservaDisponibilizadaId());
+            assertEquals("ativa", jdbc.queryForObject("SELECT status FROM reserva WHERE id = 2", String.class));
+            assertEquals("ativa", jdbc.queryForObject("SELECT status FROM reserva WHERE id = 4", String.class));
+        } finally {
+            pool.shutdownNow();
+            assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS), "Devoluções não encerraram dentro do prazo");
+        }
     }
     @Test void falhaNaMultaReverteDevolucaoEStatus() throws Exception {
         jdbc.update("INSERT INTO multa(emprestimo_id,dias_atraso,valor_diario_aplicado,valor_maximo_aplicado) VALUES (1,1,2.50,25)");

@@ -69,6 +69,7 @@ public class CirculacaoService {
         var devolvido = repository.devolver(emprestimoId, atendenteId, agora);
         if (valor.signum() > 0) repository.gerarMulta(emprestimoId, Math.toIntExact(atraso), regras, agora);
 
+        if (exemplar.livroAtivo()) repository.travarLeitoresDaFila(exemplar.livroId());
         Optional<Long> proxima = exemplar.livroAtivo()
             ? repository.primeiraReservaElegivel(exemplar.livroId(), regras.limite()) : Optional.empty();
         String status = proxima.isPresent() ? "reservado" : "disponivel";
