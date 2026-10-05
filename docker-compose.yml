@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-biblioteca_viva}
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - biblioteca-viva-data:/var/lib/postgresql/data
     healthcheck:
