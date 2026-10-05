@@ -47,7 +47,7 @@ Não existe cadastro público. Funcionários são criados pelo administrador e l
 
 - Java 21 ou superior;
 - Docker Desktop com Docker Compose;
-- portas `5432` e `8080` livres.
+- portas `15432` e `8080` livres.
 
 ### 1. Subir o PostgreSQL
 
@@ -57,7 +57,7 @@ Na raiz do projeto:
 docker compose up -d
 ```
 
-O Compose cria o banco `biblioteca_viva`. Na primeira execução da API, o Flyway aplica `V1__schema_inicial.sql`, `V2__corrige_senha_demonstracao.sql` e `V3__indices_circulacao_acervo.sql`, em `src/main/resources/db/migration`. A V2 corrige a senha de demonstração da versão anterior. Em banco já gerenciado por Flyway com V1 aplicada, as versões seguintes ainda não registradas serão executadas; senhas já alteradas são preservadas.
+O Compose cria o banco `biblioteca_viva` e publica o PostgreSQL na porta `15432` do computador, mantendo a porta `5432` dentro do container. A configuração padrão da API usa `jdbc:postgresql://localhost:15432/biblioteca_viva`. Na primeira execução da API, o Flyway aplica `V1__schema_inicial.sql`, `V2__corrige_senha_demonstracao.sql` e `V3__indices_circulacao_acervo.sql`, em `src/main/resources/db/migration`. A V2 corrige a senha de demonstração da versão anterior. Em banco já gerenciado por Flyway com V1 aplicada, as versões seguintes ainda não registradas serão executadas; senhas já alteradas são preservadas.
 
 Para conferir se o banco ficou saudável:
 
@@ -85,7 +85,7 @@ Os valores padrão são exclusivos da demonstração local. Antes do deploy, con
 
 O Docker Compose lê `.env`, mas a API iniciada pelo Maven não importa esse arquivo automaticamente. Configure as mesmas variáveis no terminal ou na IDE que inicia a API. Exemplo: `$env:DB_PASSWORD = "sua-senha"` no PowerShell ou `export DB_PASSWORD="sua-senha"` no macOS/Linux. Use JDK 21, incluindo compilador, para reproduzir a configuração do projeto.
 
-Se a porta 5432 já estiver ocupada pelo banco da E3, use `5433:5432` no Compose e `DB_URL=jdbc:postgresql://localhost:5433/biblioteca_viva` na API. O volume deste Compose guarda os dados entre reinicializações. Não execute o SQL avulso junto com o Flyway. Para um banco da E3 preenchido manualmente, use inicialmente um banco novo: não ativamos baseline automático, pois ele poderia pular alterações necessárias.
+Se a porta 15432 já estiver ocupada ou reservada, use outra porta do computador, por exemplo `15433:5432` no Compose, e configure `DB_URL=jdbc:postgresql://localhost:15433/biblioteca_viva` no terminal ou na IDE que inicia a API. O volume deste Compose guarda os dados entre reinicializações. Não execute o SQL avulso junto com o Flyway. Para um banco da E3 preenchido manualmente, use inicialmente um banco novo: não ativamos baseline automático, pois ele poderia pular alterações necessárias.
 
 ## Usuários de demonstração
 
