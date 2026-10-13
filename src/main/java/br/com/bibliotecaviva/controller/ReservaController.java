@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import br.com.bibliotecaviva.dto.ReservaCancelamentoResponse;
 import br.com.bibliotecaviva.dto.FilaReservaResponse;
 import br.com.bibliotecaviva.dto.ReservaCreateRequest;
 import br.com.bibliotecaviva.dto.ReservaResponse;
@@ -44,5 +45,12 @@ public class ReservaController {
             @PathVariable Long livroId) {
 
         return reservaService.listarFila(livroId);
+    }
+
+    @PostMapping("/{reservaId}/cancelar")
+    public ReservaCancelamentoResponse cancelar(
+            @PathVariable Long reservaId) {
+
+        return reservaService.cancelar(reservaId);
     }
 }

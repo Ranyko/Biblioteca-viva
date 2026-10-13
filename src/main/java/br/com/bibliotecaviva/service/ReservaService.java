@@ -10,6 +10,8 @@ import br.com.bibliotecaviva.dto.FilaReservaResponse;
 import br.com.bibliotecaviva.dto.ReservaCreateRequest;
 import br.com.bibliotecaviva.dto.ReservaResponse;
 import br.com.bibliotecaviva.exception.ConflitoException;
+import br.com.bibliotecaviva.exception.RecursoNaoEncontradoException;
+import br.com.bibliotecaviva.dto.ReservaCancelamentoResponse;
 import br.com.bibliotecaviva.model.Leitor;
 import br.com.bibliotecaviva.model.Livro;
 import br.com.bibliotecaviva.model.Reserva;
@@ -21,119 +23,113 @@ import br.com.bibliotecaviva.repository.ReservaRepository;
 @Service
 public class ReservaService {
 
-    private final ReservaRepository reservaRepository;
-    private final ExemplarRepository exemplarRepository;
-    private final LeitorService leitorService;
-    private final LivroService livroService;
+        private final ReservaRepository reservaRepository;
+        private final ExemplarRepository exemplarRepository;
+        private final LeitorService leitorService;
+        private final LivroService livroService;
 
-    public ReservaService(
-            ReservaRepository reservaRepository,
-            ExemplarRepository exemplarRepository,
-            LeitorService leitorService,
-            LivroService livroService) {
+        public ReservaService(
+                        ReservaRepository reservaRepository,
+                        ExemplarRepository exemplarRepository,
+                        LeitorService leitorService,
+                        LivroService livroService) {
 
-        this.reservaRepository = reservaRepository;
-        this.exemplarRepository = exemplarRepository;
-        this.leitorService = leitorService;
-        this.livroService = livroService;
-    }
-
-    @Transactional
-    public ReservaResponse criar(ReservaCreateRequest request) {
-
-        Leitor leitor =
-                leitorService.buscarEntidade(request.leitorId());
-
-        Livro livro =
-                livroService.buscarEntidade(request.livroId());
-
-        long exemplaresDisponiveis =
-                exemplarRepository.countByLivroIdAndStatus(
-                        livro.getId(),
-                        StatusExemplar.DISPONIVEL);
-
-        if (exemplaresDisponiveis > 0) {
-            throw new ConflitoException(
-                    "Não é possível reservar uma obra que possui exemplar disponível");
+                this.reservaRepository = reservaRepository;
+                this.exemplarRepository = exemplarRepository;
+                this.leitorService = leitorService;
+                this.livroService = livroService;
         }
 
-        boolean reservaDuplicada =
-                reservaRepository.existsByLeitorIdAndLivroIdAndStatusIn(
-                        leitor.getId(),
-                        livro.getId(),
-                        List.of(
-                                StatusReserva.ATIVA,
-                                StatusReserva.DISPONIVEL));
+        @Transactional
+        public ReservaResponse criar(ReservaCreateRequest request) {
 
-        if (reservaDuplicada) {
-            throw new ConflitoException(
-                    "O leitor já possui uma reserva para esta obra");
-        }
+                Leitor leitor = leitorService.buscarEntidade(request.leitorId());
 
-        Reserva reserva = new Reserva();
+                if (!leitor.getUsuario().isAtivo()) {
+                        throw new ConflitoException(
+                                        "Leitor inativo não pode realizar reservas");
+                }
 
-        reserva.setLeitor(leitor);
-        reserva.setLivro(livro);
-        reserva.setStatus(StatusReserva.ATIVA);
-        reserva.setDataSolicitacao(OffsetDateTime.now());
+                Livro livro = livroService.buscarEntidade(request.livroId());
 
-        Reserva salva = reservaRepository.save(reserva);
-
-        int posicaoFila =
-                reservaRepository
-                        .findByLivroIdAndStatusOrderByDataSolicitacaoAsc(
+                long exemplaresDisponiveis = exemplarRepository.countByLivroIdAndStatus(
                                 livro.getId(),
-                                StatusReserva.ATIVA)
-                        .indexOf(salva) + 1;
+                                StatusExemplar.DISPONIVEL);
 
-        return ReservaResponse.from(
-                salva,
-                posicaoFila);
-    }
+                if (exemplaresDisponiveis > 0) {
+                        throw new ConflitoException(
+                                        "Não é possível reservar uma obra que possui exemplar disponível");
+                }
 
-    @Transactional(readOnly = true)
-    public List<ReservaResponse> consultarFila(Long livroId) {
+                boolean reservaDuplicada = reservaRepository.existsByLeitorIdAndLivroIdAndStatusIn(
+                                leitor.getId(),
+                                livro.getId(),
+                                List.of(StatusReserva.ATIVA,
+                                                StatusReserva.DISPONIVEL));
 
-        List<Reserva> reservas =
-                reservaRepository
-                        .findByLivroIdAndStatusOrderByDataSolicitacaoAsc(
-                                livroId,
-                                StatusReserva.ATIVA);
+                if (reservaDuplicada) {
+                        throw new ConflitoException(
+                                        "O leitor já possui uma reserva para esta obra");
+                }
 
-        List<ReservaResponse> resposta =
-                new java.util.ArrayList<>();
+                Reserva reserva = new Reserva();
 
-        int posicao = 1;
+                reserva.setLeitor(leitor);
+                reserva.setLivro(livro);
+                reserva.setStatus(StatusReserva.ATIVA);
+                reserva.setDataSolicitacao(OffsetDateTime.now());
 
-        for (Reserva reserva : reservas) {
+                Reserva salva = reservaRepository.save(reserva);
 
-                resposta.add(
-                        ReservaResponse.from(
-                                reserva,
-                                posicao));
+                int posicaoFila = reservaRepository
+                                .findByLivroIdAndStatusOrderByDataSolicitacaoAsc(
+                                                livro.getId(),
+                                                StatusReserva.ATIVA)
+                                .indexOf(salva) + 1;
 
-                posicao++;
+                return ReservaResponse.from(
+                                salva,
+                                posicaoFila);
         }
 
-        return resposta;
-    }
+        @Transactional(readOnly = true)
+        public List<FilaReservaResponse> listarFila(Long livroId) {
 
-    @Transactional(readOnly = true)
-    public List<FilaReservaResponse> listarFila(Long livroId) {
-        return reservaRepository
-                .findByLivroIdAndStatusOrderByDataSolicitacaoAsc(
-                        livroId,
-                        StatusReserva.ATIVA)
-                .stream()
-                .map(reserva -> new FilaReservaResponse(
-                        reservaRepository
+                List<Reserva> reservas = reservaRepository
                                 .findByLivroIdAndStatusOrderByDataSolicitacaoAsc(
-                                        livroId,
-                                        StatusReserva.ATIVA)
-                                .indexOf(reserva) + 1,
-                        reserva.getId(),
-                        reserva.getLeitor().getId(),
-                        reserva.getLeitor().getUsuario().getNome()))
-                .toList();
-    }
+                                                livroId,
+                                                StatusReserva.ATIVA);
+
+                List<FilaReservaResponse> resposta = new java.util.ArrayList<>();
+
+                for (int i = 0; i < reservas.size(); i++) {
+
+                        Reserva reserva = reservas.get(i);
+
+                        resposta.add(
+                                        new FilaReservaResponse(
+                                                        i + 1,
+                                                        reserva.getId(),
+                                                        reserva.getLeitor().getId(),
+                                                        reserva.getLeitor().getUsuario().getNome()));
+                }
+
+                return resposta;
+        }
+
+        @Transactional
+        public ReservaCancelamentoResponse cancelar(Long reservaId) {
+
+                Reserva reserva = reservaRepository.findById(reservaId)
+                                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                                                "Reserva não encontrada"));
+
+                reserva.setStatus(StatusReserva.CANCELADA);
+
+                reservaRepository.save(reserva);
+
+                return new ReservaCancelamentoResponse(
+                                reserva.getId(),
+                                reserva.getStatus().valor());
+        }
 }
