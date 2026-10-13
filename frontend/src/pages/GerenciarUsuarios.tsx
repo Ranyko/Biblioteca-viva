@@ -12,22 +12,12 @@ const ROTULO_PERFIL: Record<Perfil, string> = {
   administrador: 'Administrador',
 };
 
-interface Formulario {
-  id: number;
-  nome: string;
-  email: string;
-  perfil: Perfil;
-  ativo: boolean;
-}
-
 export function GerenciarUsuarios() {
   const navigate = useNavigate();
   const logado = getUsuario();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
-  const [form, setForm] = useState<Formulario | null>(null);
-  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -49,32 +39,6 @@ export function GerenciarUsuarios() {
   const substituir = (atualizado: Usuario) =>
     setUsuarios((l) => l.map((u) => (u.id === atualizado.id ? atualizado : u)));
 
-  const handleEdit = (u: Usuario) => {
-    setErro('');
-    setForm({ id: u.id, nome: u.nome, email: u.email, perfil: u.perfil, ativo: u.ativo });
-  };
-
-  const handleSalvar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form) return;
-    setErro('');
-    setSalvando(true);
-    try {
-      const atualizado = await usuariosService.atualizar(form.id, {
-        nome: form.nome.trim(),
-        email: form.email.trim(),
-        perfil: form.perfil,
-        ativo: form.ativo,
-      });
-      substituir(atualizado);
-      setForm(null);
-    } catch (err) {
-      setErro(textoErro(err));
-    } finally {
-      setSalvando(false);
-    }
-  };
-
   // O back não tem DELETE: "remover" inativa o usuário (ele deixa de conseguir entrar).
   const handleToggleAtivo = async (u: Usuario) => {
     const acao = u.ativo ? 'inativar' : 'reativar';
@@ -85,8 +49,6 @@ export function GerenciarUsuarios() {
       setErro(textoErro(err));
     }
   };
-
-  const ehLeitor = form?.perfil === 'leitor';
 
   return (
     <div className="app-container">
@@ -106,55 +68,6 @@ export function GerenciarUsuarios() {
         </div>
 
         {erro && <p style={{ color: '#b91c1c', marginBottom: '1rem' }}>{erro}</p>}
-
-        {form && (
-          <form
-            onSubmit={handleSalvar}
-            className="gerenciar-card"
-            style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}
-          >
-            <label>
-              Nome<br />
-              <input
-                type="text"
-                value={form.nome}
-                maxLength={120}
-                required
-                onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              />
-            </label>
-            <label>
-              E-mail<br />
-              <input
-                type="email"
-                value={form.email}
-                maxLength={160}
-                required
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </label>
-            <label>
-              Perfil<br />
-              {/* O back não permite converter leitor em funcionário nem o contrário. */}
-              <select
-                value={form.perfil}
-                disabled={ehLeitor}
-                onChange={(e) => setForm({ ...form, perfil: e.target.value as Perfil })}
-              >
-                {ehLeitor ? (
-                  <option value="leitor">Leitor</option>
-                ) : (
-                  <>
-                    <option value="atendente">Atendente</option>
-                    <option value="administrador">Administrador</option>
-                  </>
-                )}
-              </select>
-            </label>
-            <button type="submit" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</button>
-            <button type="button" onClick={() => setForm(null)}>Cancelar</button>
-          </form>
-        )}
 
         <div className="gerenciar-card">
           <div className="table-responsive">
@@ -188,7 +101,7 @@ export function GerenciarUsuarios() {
                           type="button"
                           className="btn-icon"
                           title="Editar usuário"
-                          onClick={() => handleEdit(u)}
+                          onClick={() => navigate(`/usuarios/${u.id}/editar`)}
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 20h9" />

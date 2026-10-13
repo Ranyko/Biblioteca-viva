@@ -18,8 +18,17 @@ export interface UsuarioUpdate {
   ativo: boolean;
 }
 
+export interface UsuarioCreate {
+  nome: string;
+  email: string;
+  senha: string;
+  perfil: 'atendente' | 'administrador'; // leitor é cadastrado pelo atendente
+}
+
 export const usuariosService = {
   listar: () => api<Usuario[]>('/admin/usuarios'),
+  criar: (dados: UsuarioCreate) => api<Usuario>('/admin/usuarios', { method: 'POST', body: dados }),
+  // PUT exige todos os campos (nome, email, perfil e ativo).
   atualizar: (id: number, dados: UsuarioUpdate) =>
     api<Usuario>(`/admin/usuarios/${id}`, { method: 'PUT', body: dados }),
   definirAtivo: (u: Usuario, ativo: boolean) =>

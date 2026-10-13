@@ -34,6 +34,7 @@ export function App() {
         <Route path="/dashboard" element={protegido(ADMIN, <Dashboard />)} />
         <Route path="/usuarios" element={protegido(ADMIN, <GerenciarUsuarios />)} />
         <Route path="/cadastrar-usuario" element={protegido(ADMIN, <CadastroUsuario />)} />
+        <Route path="/usuarios/:id/editar" element={protegido(ADMIN, <CadastroUsuario />)} />
         <Route path="/livros" element={protegido(ADMIN, <GerenciarLivros />)} />
         <Route path="/livros/cadastrar" element={protegido(ADMIN, <CadastrarLivro />)} />
         <Route path="/livros/:id/editar" element={protegido(ADMIN, <CadastrarLivro />)} />
