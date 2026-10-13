@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navbar } from '../components/Navbar';
+import { getUsuario } from '../services/api';
 import './CadastroUsuario.css';
 
 export function CadastroUsuario() {
@@ -14,7 +15,7 @@ export function CadastroUsuario() {
 
   return (
     <div className="app-container">
-      <Navbar />
+      <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Usuário' }} />
 
       <main className="content">
         <h1 className="page-title">Cadastrar Usuário</h1>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { homePorPerfil } from '../auth/perfis';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -40,8 +41,8 @@ export function LoginForm() {
           })
         );
 
-        // Redireciona para o Dashboard ou Acervo
-        navigate('/dashboard');
+        // Cada perfil vai para a sua tela inicial
+        navigate(homePorPerfil(data.perfil));
       } else {
         setErro('E-mail ou senha incorretos.');
       }

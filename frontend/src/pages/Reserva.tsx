@@ -36,8 +36,8 @@ export function Reserva() {
 
   const handleReservar = () => {
     alert(`Reserva efetuada com sucesso para: ${obra.titulo}`);
-    // Redireciona para a tela de Fila de Reservas após reservar
-    navigate('/filareserva');
+    // A Fila de Reserva é do atendente; o leitor volta para o acervo
+    navigate('/acervo');
   };
 
   const handleCancelar = () => {

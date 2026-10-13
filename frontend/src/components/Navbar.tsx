@@ -1,6 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import iconeBiblioteca from '../assets/book_open.svg';
-import { getUsuario } from '../services/api';
+import { getUsuario, limparSessao } from '../services/api';
+import { MENU_POR_PERFIL } from '../auth/perfis';
+import type { Perfil } from '../services/usuarios';
 
 interface NavbarProps {
   userProfile?: {
@@ -11,6 +13,14 @@ interface NavbarProps {
 
 export function Navbar({ userProfile }: NavbarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const usuario = getUsuario();
+  const menu = MENU_POR_PERFIL[usuario?.perfil as Perfil] ?? [];
+
+  const sair = () => {
+    limparSessao();
+    navigate('/');
+  };
 
   return (
     <header className="navbar">
@@ -28,74 +38,32 @@ export function Navbar({ userProfile }: NavbarProps) {
       {userProfile ? (
         <div className="nav-right">
           <nav className="nav-links">
-            <Link 
-              to="/dashboard" 
-              className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
-            >
-              Dashboard
-            </Link>
-
-            {getUsuario()?.perfil === 'administrador' && (
-              <Link 
-                to="/usuarios" 
-                className={`nav-item ${location.pathname === '/usuarios' || location.pathname === '/cadastrar-usuario' ? 'active' : ''}`}
-              >
-                Usuários
-              </Link>
-            )}
-
-            <Link 
-              to="/livros" 
-              className={`nav-item ${location.pathname.startsWith('/livros') ? 'active' : ''}`}
-            >
-              Livros
-            </Link>
-
-            <Link 
-              to="/exemplares" 
-              className={`nav-item ${location.pathname === '/exemplares' ? 'active' : ''}`}
-            >
-              Exemplares
-            </Link>
-
-            <Link 
-              to="/acervo" 
-              className={`nav-item ${location.pathname === '/acervo' ? 'active' : ''}`}
-            >
-              Acervo
-            </Link>
-            
-            <Link 
-              to="/filareserva" 
-              className={`nav-item ${location.pathname === '/filareserva' ? 'active' : ''}`}
-            >
-              Fila de Reservas
-            </Link>
-
-            <Link 
-              to="/emprestimo" 
-              className={`nav-item ${location.pathname === '/emprestimo' ? 'active' : ''}`}
-            >
-              Empréstimo
-            </Link>
-
-            <Link 
-              to="/devolucao" 
-              className={`nav-item ${location.pathname === '/devolucao' ? 'active' : ''}`}
-            >
-              Devolução
-            </Link>
+            {menu.map((item) => {
+              const ativo = (item.ativoEm ?? [item.to]).some((c) => location.pathname.startsWith(c));
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`nav-item ${ativo ? 'active' : ''}`}
+                >
+                  {item.rotulo}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="user-profile">
-            <span className="user-role">{userProfile.nome}</span>
+            <span className="user-role">{usuario?.nome ?? userProfile.nome}</span>
             <div className="avatar-circle">
               {userProfile.avatarUrl ? (
                 <img src={userProfile.avatarUrl} alt="Avatar" />
               ) : (
-                <span>{userProfile.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U'}</span>
+                <span>{(usuario?.nome ?? userProfile.nome)?.charAt(0).toUpperCase() || 'U'}</span>
               )}
             </div>
+            <button type="button" className="btn-secondary" onClick={sair}>
+              Sair
+            </button>
           </div>
         </div>
       ) : (
