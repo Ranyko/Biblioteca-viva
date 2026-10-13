@@ -1,79 +1,57 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { getUsuario, textoErro } from '../services/api';
+import { pesquisarAcervo, type ObraAcervo } from '../services/acervo';
 import './Acervo.css';
-
-interface Livro {
-  id: number;
-  titulo: string;
-  autor: string;
-  tipo: string;
-  quantidadeDisponivel: number;
-  capaUrl?: string;
-}
-
-const ACERVO_MOCK: Livro[] = [
-  {
-    id: 1,
-    titulo: 'Dom Casmurro',
-    autor: 'Machado de Assis',
-    tipo: 'Livro',
-    quantidadeDisponivel: 2,
-  },
-  {
-    id: 2,
-    titulo: 'Memórias Póstumas de Brás Cubas',
-    autor: 'Machado de Assis',
-    tipo: 'Livro',
-    quantidadeDisponivel: 4,
-  },
-  {
-    id: 3,
-    titulo: 'O Cortiço',
-    autor: 'Aluísio Azevedo',
-    tipo: 'Livro',
-    quantidadeDisponivel: 1,
-  },
-  {
-    id: 4,
-    titulo: 'Grande Sertão: Veredas',
-    autor: 'João Guimarães Rosa',
-    tipo: 'Livro',
-    quantidadeDisponivel: 3,
-  },
-  {
-    id: 5,
-    titulo: 'A Hora da Estrela',
-    autor: 'Clarice Lispector',
-    tipo: 'Livro',
-    quantidadeDisponivel: 5,
-  },
-  {
-    id: 6,
-    titulo: 'Vidas Secas',
-    autor: 'Graciliano Ramos',
-    tipo: 'Livro',
-    quantidadeDisponivel: 0,
-  },
-];
 
 export function Acervo() {
   const [busca, setBusca] = useState('');
-  const navigate = useNavigate(); 
+  const [obras, setObras] = useState<ObraAcervo[]>([]);
+  const [truncado, setTruncado] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const navigate = useNavigate();
 
- 
-  const handleVerDetalhes = (livro: Livro) => {
-    navigate('/reserva', { state: livro });
+  // Pesquisa no back a cada mudança do termo (com pequena espera enquanto a pessoa digita).
+  useEffect(() => {
+    let cancelado = false;
+    const timer = setTimeout(async () => {
+      setCarregando(true);
+      setErro('');
+      try {
+        const r = await pesquisarAcervo(busca);
+        if (cancelado) return;
+        setObras(r.obras);
+        setTruncado(r.truncado);
+      } catch (err) {
+        if (!cancelado) setErro(textoErro(err));
+      } finally {
+        if (!cancelado) setCarregando(false);
+      }
+    }, busca ? 300 : 0);
+    return () => {
+      cancelado = true;
+      clearTimeout(timer);
+    };
+  }, [busca]);
+
+  const handleVerDetalhes = (obra: ObraAcervo) => {
+    navigate('/reserva', {
+      state: {
+        titulo: obra.titulo,
+        autor: obra.autores.join(', '),
+        tipo: obra.categorias.join(', '),
+        isbn: obra.isbn,
+        exemplaresDisponiveis: obra.exemplaresDisponiveis,
+        descricao: obra.descricao ?? undefined,
+      },
+    });
   };
-
- 
-  const livrosFiltrados = ACERVO_MOCK.filter((livro) =>
-    livro.titulo.toLowerCase().includes(busca.toLowerCase())
-  );
 
   return (
     <div className="app-container">
-      <Navbar userProfile={{ nome: 'Leitor' }} />
+      <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Usuário' }} />
 
       <main className="acervo-container">
         <h1 className="page-title">Acervo</h1>
@@ -84,7 +62,8 @@ export function Acervo() {
             <div className="search-input-wrapper">
               <input
                 type="text"
-                placeholder="Pesquisar livros pelo título..."
+                placeholder="Pesquisar por título, autor ou categoria..."
+                maxLength={200}
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
@@ -96,49 +75,50 @@ export function Acervo() {
           </div>
 
          
+          {erro && <p style={{ color: '#b91c1c', margin: '0 0 1rem' }}>{erro}</p>}
+
           <div className="acervo-grid">
-            {livrosFiltrados.length > 0 ? (
-              livrosFiltrados.map((livro) => (
-                <div key={livro.id} className="livro-item-card">
-                  
-                  {/* Capa */}
+            {carregando && <p className="no-results-text">Carregando...</p>}
+            {!carregando && !erro && obras.length === 0 && (
+              <p className="no-results-text">
+                {busca ? `Nenhum livro encontrado para "${busca}".` : 'O acervo está vazio.'}
+              </p>
+            )}
+            {!carregando &&
+              obras.map((obra) => (
+                <div key={obra.id} className="livro-item-card">
                   <div className="livro-cover-placeholder">
-                    {livro.capaUrl ? (
-                      <img src={livro.capaUrl} alt={livro.titulo} />
-                    ) : (
-                      <span className="placeholder-text">Capa</span>
-                    )}
+                    <span className="placeholder-text">Capa</span>
                   </div>
 
-                  
                   <div className="livro-info">
-                    <h3 className="livro-titulo">{livro.titulo}</h3>
-                    <p className="livro-autor">{livro.autor}</p>
-                    <p className="livro-tipo">{livro.tipo}</p>
+                    <h3 className="livro-titulo">{obra.titulo}</h3>
+                    <p className="livro-autor">{obra.autores.join(', ')}</p>
+                    <p className="livro-tipo">{obra.categorias.join(', ')}</p>
                   </div>
 
-                 
                   <div className="livro-action-group">
                     <span className="livro-qtd">
-                      Quantidade disponível: <strong>{livro.quantidadeDisponivel}</strong>
+                      Quantidade disponível: <strong>{obra.exemplaresDisponiveis}</strong>
                     </span>
 
-                    {}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn-ver-detalhes"
-                      onClick={() => handleVerDetalhes(livro)}
+                      onClick={() => handleVerDetalhes(obra)}
                     >
                       Ver detalhes
                     </button>
                   </div>
-
                 </div>
-              ))
-            ) : (
-              <p className="no-results-text">Nenhum livro encontrado para "{busca}".</p>
-            )}
+              ))}
           </div>
+
+          {truncado && !carregando && (
+            <p style={{ color: '#6b7280', marginTop: '1rem' }}>
+              Mostrando as primeiras 100 obras. Refine a busca para ver as demais.
+            </p>
+          )}
         </div>
       </main>
     </div>

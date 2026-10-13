@@ -27,10 +27,10 @@ export function Reserva() {
     tipo: livroNav?.tipo || 'Livro',
     isbn: livroNav?.isbn || '978-8535902778',
     exemplaresDisponiveis: livroNav?.exemplaresDisponiveis ?? 2,
-    exemplaresTotais: livroNav?.exemplaresTotais ?? 5,
+    exemplaresTotais: livroNav ? livroNav.exemplaresTotais : 5, // o acervo não informa o total
     descricao:
       livroNav?.descricao ||
-      'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s.',
+      (livroNav ? 'Sem descrição cadastrada.' : 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s.'),
     capaUrl: livroNav?.capaUrl || ''
   });
 
@@ -110,7 +110,8 @@ export function Reserva() {
               <div className="exemplares-box">
                 <span className="exemplares-title">Exemplares Disponíveis</span>
                 <span className="exemplares-count">
-                  {obra.exemplaresDisponiveis} de {obra.exemplaresTotais}
+                  {obra.exemplaresDisponiveis}
+                  {obra.exemplaresTotais != null && ` de ${obra.exemplaresTotais}`}
                 </span>
               </div>
             </div>
