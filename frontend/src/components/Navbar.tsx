@@ -49,6 +49,13 @@ export function Navbar({ userProfile }: NavbarProps) {
             </Link>
 
             <Link 
+              to="/exemplares" 
+              className={`nav-item ${location.pathname === '/exemplares' ? 'active' : ''}`}
+            >
+              Exemplares
+            </Link>
+
+            <Link 
               to="/acervo" 
               className={`nav-item ${location.pathname === '/acervo' ? 'active' : ''}`}
             >

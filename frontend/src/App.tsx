@@ -9,6 +9,7 @@ import { Acervo } from './pages/Acervo';
 import { FilaReserva } from './pages/FilaReserva';
 import { CadastrarLivro } from './pages/CadastrarLivro';
 import { GerenciarLivros } from './pages/GerenciarLivros';
+import { GerenciarExemplares } from './pages/GerenciarExemplares';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
         <Route path="/acervo" element={<Acervo />} />
         <Route path="/filareserva" element={<FilaReserva />} />
         <Route path="/livros" element={<GerenciarLivros />} />
+        <Route path="/exemplares" element={<GerenciarExemplares />} />
         <Route path="*" element={<h2 style={{ padding: '2rem' }}>Página não encontrada</h2>} />
         <Route path="/livros/cadastrar" element={<CadastrarLivro />} />
         
