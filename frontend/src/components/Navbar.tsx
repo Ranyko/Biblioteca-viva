@@ -24,7 +24,6 @@ export function Navbar({ userProfile }: NavbarProps) {
         <span className="logo-text">Biblioteca Viva</span>
       </div>
 
-     
       {userProfile ? (
         <div className="nav-right">
           <nav className="nav-links">
@@ -43,12 +42,18 @@ export function Navbar({ userProfile }: NavbarProps) {
             </Link>
 
             <Link 
+              to="/livros" 
+              className={`nav-item ${location.pathname.startsWith('/livros') ? 'active' : ''}`}
+            >
+              Livros
+            </Link>
+
+            <Link 
               to="/acervo" 
               className={`nav-item ${location.pathname === '/acervo' ? 'active' : ''}`}
             >
               Acervo
             </Link>
-
             
             <Link 
               to="/filareserva" 
