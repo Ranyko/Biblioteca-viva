@@ -25,9 +25,9 @@ export function App() {
         <Route path="/filareserva" element={<FilaReserva />} />
         <Route path="/livros" element={<GerenciarLivros />} />
         <Route path="/exemplares" element={<GerenciarExemplares />} />
-        <Route path="*" element={<h2 style={{ padding: '2rem' }}>Página não encontrada</h2>} />
         <Route path="/livros/cadastrar" element={<CadastrarLivro />} />
-        
+        <Route path="/livros/:id/editar" element={<CadastrarLivro />} />
+        <Route path="*" element={<h2 style={{ padding: '2rem' }}>Página não encontrada</h2>} />
       </Routes>
     </BrowserRouter>
   );

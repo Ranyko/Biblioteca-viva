@@ -1,62 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import adicionarIcon from '../assets/adicionar.svg';
+import { getUsuario, textoErro } from '../services/api';
+import { livrosService, type Livro } from '../services/catalogo';
 import './GerenciarLivros.css';
-
-interface Livro {
-  id: number;
-  titulo: string;
-  isbn: string;
-  autor: string;
-  categoria: string;
-}
-
-const LIVROS_MOCK: Livro[] = [
-  {
-    id: 1,
-    titulo: 'Dom Casmurro',
-    isbn: '978-85-359-0277-2',
-    autor: 'Machado de Assis',
-    categoria: 'Literatura Clássica Brasileira',
-  },
-  {
-    id: 2,
-    titulo: 'O Cortiço',
-    isbn: '978-85-220-5517-0',
-    autor: 'Aluísio Azevedo',
-    categoria: 'Literatura Naturalista Brasileira',
-  },
-  {
-    id: 3,
-    titulo: 'Antologia Poética',
-    isbn: '978-85-359-1258-9',
-    autor: 'Carlos Drummond de Andrade',
-    categoria: 'Poesia Brasileira',
-  },
-];
 
 export function GerenciarLivros() {
   const navigate = useNavigate();
-  const [livros, setLivros] = useState<Livro[]>(LIVROS_MOCK);
+  const [livros, setLivros] = useState<Livro[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const pagina = await livrosService.listar(0, 100);
+        if (!cancelado) setLivros(pagina.itens);
+      } catch (err) {
+        if (!cancelado) setErro(textoErro(err));
+      } finally {
+        if (!cancelado) setCarregando(false);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   const handleAdicionar = () => {
     navigate('/livros/cadastrar');
   };
 
   const handleEdit = (id: number) => {
-    alert(`Editar livro ID #${id}`);
+    navigate(`/livros/${id}/editar`);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Deseja realmente excluir este livro?')) {
-      setLivros(livros.filter((l) => l.id !== id));
+  // O backend não tem DELETE: "remover" inativa a obra (some do acervo, mantém o histórico).
+  const handleToggleAtivo = async (livro: Livro) => {
+    const acao = livro.ativo ? 'inativar' : 'reativar';
+    if (!confirm(`Deseja realmente ${acao} "${livro.titulo}"?`)) return;
+    try {
+      const atualizado = await livrosService.definirAtivo(livro, !livro.ativo);
+      setLivros((atual) => atual.map((l) => (l.id === atualizado.id ? atualizado : l)));
+    } catch (err) {
+      setErro(textoErro(err));
     }
   };
 
   return (
     <div className="app-container">
-      <Navbar userProfile={{ nome: 'Atendente' }} />
+      <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Usuário' }} />
 
       <main className="gerenciar-livros-container">
         <div className="header-flex">
@@ -71,6 +66,8 @@ export function GerenciarLivros() {
           </button>
         </div>
 
+        {erro && <p style={{ color: '#b91c1c', marginBottom: '1rem' }}>{erro}</p>}
+
         <div className="gerenciar-card">
           <div className="table-responsive">
             <table className="gerenciar-table">
@@ -84,12 +81,18 @@ export function GerenciarLivros() {
                 </tr>
               </thead>
               <tbody>
+                {carregando && (
+                  <tr><td colSpan={5}>Carregando...</td></tr>
+                )}
+                {!carregando && livros.length === 0 && !erro && (
+                  <tr><td colSpan={5}>Nenhum livro cadastrado.</td></tr>
+                )}
                 {livros.map((item) => (
-                  <tr key={item.id}>
-                    <td className="col-titulo">{item.titulo}</td>
+                  <tr key={item.id} style={item.ativo ? undefined : { opacity: 0.5 }}>
+                    <td className="col-titulo">{item.titulo}{item.ativo ? '' : ' (inativo)'}</td>
                     <td>{item.isbn}</td>
-                    <td>{item.autor}</td>
-                    <td>{item.categoria}</td>
+                    <td>{item.autores.map((a) => a.nome).join(', ')}</td>
+                    <td>{item.categorias.map((c) => c.nome).join(', ')}</td>
                     <td className="col-acoes">
                       <button
                         type="button"
@@ -106,8 +109,8 @@ export function GerenciarLivros() {
                       <button
                         type="button"
                         className="btn-icon btn-delete"
-                        title="Remover livro"
-                        onClick={() => handleDelete(item.id)}
+                        title={item.ativo ? 'Inativar livro' : 'Reativar livro'}
+                        onClick={() => handleToggleAtivo(item)}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="3 6 5 6 21 6" />
