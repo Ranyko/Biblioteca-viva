@@ -1,0 +1,164 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #dbe2ef !important;
+}
+
+.app-container {
+  min-height: 100vh;
+  background-color: #dbe2ef;
+  display: flex;
+  flex-direction: column;
+}
+
+.gerenciar-usuarios-container {
+  padding: 2.5rem 3.5rem;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  text-align: left;
+}
+
+.btn-add-livro {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.btn-add-livro img {
+  width: 32px;
+  height: 32px;
+}
+
+.btn-add-livro:hover {
+  transform: scale(1.1);
+}
+
+.gerenciar-card {
+  background-color: #ffffff;
+  padding: 2.5rem 3rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.gerenciar-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #111827;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.gerenciar-table thead tr {
+  background-color: #cbe3ff;
+}
+
+.gerenciar-table th {
+  padding: 1.25rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  border-bottom: 1px solid #111827;
+}
+
+.gerenciar-table th.col-titulo {
+  text-align: left;
+}
+
+.gerenciar-table td {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.95rem;
+  color: #111827;
+  text-align: center;
+  border-bottom: 1px solid #111827;
+  background-color: #ffffff;
+}
+
+.gerenciar-table td.col-titulo {
+  text-align: left;
+  font-weight: 500;
+}
+
+.gerenciar-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.col-acoes {
+  width: 120px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem;
+  margin: 0 0.2rem;
+  border-radius: 4px;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-icon:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.btn-delete:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .gerenciar-usuarios-container {
+    padding: 1.5rem;
+  }
+
+  .gerenciar-card {
+    padding: 1.25rem;
+  }
+
+  .gerenciar-table th,
+  .gerenciar-table td {
+    padding: 0.85rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}

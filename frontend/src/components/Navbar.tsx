@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import iconeBiblioteca from '../assets/book_open.svg';
+import { getUsuario } from '../services/api';
 
 interface NavbarProps {
   userProfile?: {
@@ -34,12 +35,14 @@ export function Navbar({ userProfile }: NavbarProps) {
               Dashboard
             </Link>
 
-            <Link 
-              to="/cadastrar-usuario" 
-              className={`nav-item ${location.pathname === '/cadastrar-usuario' ? 'active' : ''}`}
-            >
-              Usuários
-            </Link>
+            {getUsuario()?.perfil === 'administrador' && (
+              <Link 
+                to="/usuarios" 
+                className={`nav-item ${location.pathname === '/usuarios' || location.pathname === '/cadastrar-usuario' ? 'active' : ''}`}
+              >
+                Usuários
+              </Link>
+            )}
 
             <Link 
               to="/livros" 

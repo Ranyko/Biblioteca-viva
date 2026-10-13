@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { CadastroUsuario } from './pages/CadastroUsuario';
+import { GerenciarUsuarios } from './pages/GerenciarUsuarios';
 import { Dashboard } from './pages/Dashboard';
 import { Emprestimo } from "./pages/Emprestimo";
 import { Devolucao } from "./pages/Devolucao";
@@ -16,6 +17,7 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/usuarios" element={<GerenciarUsuarios />} />
         <Route path="/cadastrar-usuario" element={<CadastroUsuario />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/emprestimo" element={<Emprestimo />} />
