@@ -52,7 +52,7 @@ export function FilaReserva() {
 
   return (
     <div className="app-container">
-      <Navbar activeTab="Reserva" userProfile={{ nome: 'Atendente' }} />
+      <Navbar userProfile={{ nome: 'Atendente' }} />
 
       <main className="reserva-container">
         <h1 className="page-title">Fila de Reserva</h1>
