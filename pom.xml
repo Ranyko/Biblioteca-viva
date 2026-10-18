@@ -19,6 +19,10 @@
 
     <properties>
         <java.version>21</java.version>
+        <tomcat.version>11.0.26</tomcat.version>
+        <jackson-bom.version>3.1.7</jackson-bom.version>
+        <jackson-2-bom.version>2.22.3</jackson-2-bom.version>
+        <hibernate-validator.version>9.1.5.Final</hibernate-validator.version>
     </properties>
 
     <dependencies>
@@ -42,6 +46,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>42.7.14</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -56,7 +61,7 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.5.0</version>
+            <version>4.6.2</version>
         </dependency>
 
         <dependency>
