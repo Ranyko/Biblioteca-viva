@@ -5,6 +5,8 @@ import type { Perfil } from './services/usuarios';
 import { Login } from './pages/Login';
 import { CadastroUsuario } from './pages/CadastroUsuario';
 import { GerenciarUsuarios } from './pages/GerenciarUsuarios';
+import { GerenciarLeitores } from './pages/GerenciarLeitores';
+import { CadastrarLeitor } from './pages/CadastrarLeitor';
 import { Dashboard } from './pages/Dashboard';
 import { Emprestimo } from "./pages/Emprestimo";
 import { Devolucao } from "./pages/Devolucao";
@@ -41,6 +43,8 @@ export function App() {
         <Route path="/exemplares" element={protegido(ADMIN, <GerenciarExemplares />)} />
 
         {/* Atendente */}
+        <Route path="/leitores" element={protegido(ATENDENTE, <GerenciarLeitores />)} />
+        <Route path="/leitores/cadastrar" element={protegido(ATENDENTE, <CadastrarLeitor />)} />
         <Route path="/emprestimo" element={protegido(ATENDENTE, <Emprestimo />)} />
         <Route path="/devolucao" element={protegido(ATENDENTE, <Devolucao />)} />
         <Route path="/filareserva" element={protegido(ATENDENTE, <FilaReserva />)} />

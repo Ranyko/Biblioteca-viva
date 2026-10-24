@@ -27,6 +27,7 @@ export const MENU_POR_PERFIL: Record<Perfil, ItemMenu[]> = {
     { rotulo: 'Exemplares', to: '/exemplares' },
   ],
   atendente: [
+    { rotulo: 'Leitores', to: '/leitores' },
     { rotulo: 'Empréstimo', to: '/emprestimo' },
     { rotulo: 'Devolução', to: '/devolucao' },
     { rotulo: 'Fila de Reservas', to: '/filareserva' },
