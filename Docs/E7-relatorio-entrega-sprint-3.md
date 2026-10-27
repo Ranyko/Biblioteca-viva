@@ -33,8 +33,6 @@ Os testes automatizados executados localmente foram aprovados. O detalhamento do
 
 ## 5. Retrospectiva e contribuição individual
 
-A retrospectiva desta sprint destaca dificuldades no processo de merge e a percepção de pouco respaldo e auxílio do professor.
-
 O relatório individual registra as implementações H14 e H15, os testes realizados e a observação informal das implementações de H11 e H13, sem caracterizá-la como revisão formal de código.
 
 ## 6. Riscos e impedimentos para a próxima sprint
