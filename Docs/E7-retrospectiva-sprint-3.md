@@ -15,7 +15,6 @@ Não há informações suficientes nesta documentação para confirmar quais aç
 ## 3. O que não funcionou
 
 - O processo de merge apresentou dificuldades, prejudicando o fluxo de integração das alterações.
-- Houve percepção de pouco respaldo e auxílio do professor durante o desenvolvimento.
 
 ## 4. Ações para a próxima sprint
 
