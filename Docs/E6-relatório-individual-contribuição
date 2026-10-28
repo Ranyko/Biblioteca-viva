@@ -1,0 +1,26 @@
+# Relatório Individual de Contribuição — Sprint 2 — Vinicius Rocha
+
+**Papel nesta sprint:** Scrum Master\Backend
+
+## 1. O que fiz
+
+| Item | PR/commit | Status |
+|---|---|---|
+| Implementação da H9 - Reserva de obra indisponível | feature/h9-h10-reservas | Concluído |
+| Implementação da H10 - Consulta da fila de reservas | feature/h9-h10-reservas | Concluído |
+| Criação dos DTOs de reserva | feature/h9-h10-reservas | Concluído |
+| Criação de entidades e repositórios necessários | feature/h9-h10-reservas | Concluído |
+| Organização do backlog da sprint | Sprint 2 | Concluído |
+
+## 2. Rituais que participei
+
+- [x] Sprint Review
+- [x] Retrospectiva
+
+## 3. PRs de colegas que revisei
+
+Nenhum PR revisado formalmente durante esta sprint.
+
+## 4. Dificuldades e o que aprendi
+
+Tive dificuldades na configuração do ambiente backend, principalmente na integração com o banco de dados Neon e na execução dos testes. Também com Spring Boot, JPA, organização em camadas (Controller, Service e Repository) e fluxo de trabalho com Git e GitHub utilizando branches.
