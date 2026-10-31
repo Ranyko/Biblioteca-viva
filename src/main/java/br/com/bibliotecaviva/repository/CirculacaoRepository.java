@@ -145,10 +145,25 @@ public class CirculacaoRepository {
             """, exemplarId, agora, limite, id);
     }
 
-    public void gerarMulta(long emprestimoId, int atraso, Regras regras, OffsetDateTime agora) {
-        jdbc.update("""
+    public long gerarMulta(long emprestimoId, int atraso, Regras regras, OffsetDateTime agora) {
+        return jdbc.query("""
             INSERT INTO multa (emprestimo_id, dias_atraso, valor_diario_aplicado, valor_maximo_aplicado, gerada_em)
-            VALUES (?, ?, ?, ?, ?)
-            """, emprestimoId, atraso, regras.diaria(), regras.teto(), agora);
+            VALUES (?, ?, ?, ?, ?) RETURNING id
+            """, (rs, n) -> rs.getLong("id"), emprestimoId, atraso, regras.diaria(), regras.teto(), agora).get(0);
+    }
+
+    /** Destinatário do aviso RESERVA_DISPONIVEL: o usuário dono da reserva recém-disponibilizada. */
+    public long usuarioIdDaReserva(long reservaId) {
+        return jdbc.query("""
+            SELECT le.usuario_id FROM reserva r JOIN leitor le ON le.id = r.leitor_id WHERE r.id = ?
+            """, (rs, n) -> rs.getLong(1), reservaId).stream().findFirst()
+            .orElseThrow(() -> new RecursoNaoEncontradoException("Reserva não encontrada"));
+    }
+
+    /** Destinatário do aviso MULTA_GERADA: o usuário dono do leitor do empréstimo. */
+    public long usuarioIdDoLeitor(long leitorId) {
+        return jdbc.query("SELECT usuario_id FROM leitor WHERE id = ?",
+            (rs, n) -> rs.getLong(1), leitorId).stream().findFirst()
+            .orElseThrow(() -> new RecursoNaoEncontradoException("Leitor não encontrado"));
     }
 }

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import br.com.bibliotecaviva.dto.*;
 import br.com.bibliotecaviva.exception.ConflitoException;
+import br.com.bibliotecaviva.model.Aviso.ReferenciaTipo;
+import br.com.bibliotecaviva.model.Aviso.TipoAviso;
 import br.com.bibliotecaviva.repository.CirculacaoRepository;
 import br.com.bibliotecaviva.repository.CirculacaoRepository.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,9 +17,10 @@ import static org.mockito.Mockito.*;
 
 class CirculacaoServiceTest {
     private final CirculacaoRepository repository = mock(CirculacaoRepository.class);
+    private final AvisoService avisoService = mock(AvisoService.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-01T02:00:00Z"), ZoneId.of("America/Sao_Paulo"));
     private final OffsetDateTime agora = OffsetDateTime.now(clock);
-    private final CirculacaoService service = new CirculacaoService(repository, clock);
+    private final CirculacaoService service = new CirculacaoService(repository, avisoService, clock);
     private final EmprestimoCreateRequest request = new EmprestimoCreateRequest(1L, 2L);
 
     @BeforeEach void preparar() {
@@ -26,6 +29,8 @@ class CirculacaoServiceTest {
         when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"), new BigDecimal("25.00"), 2));
         when(repository.reservaDoExemplar(2)).thenReturn(Optional.empty());
         when(repository.primeiraReservaElegivel(1, 3)).thenReturn(Optional.empty());
+        when(repository.usuarioIdDoLeitor(1)).thenReturn(50L);
+        when(repository.usuarioIdDaReserva(7)).thenReturn(60L);
     }
 
     @Test void calculaPrazoNoFusoDaBiblioteca() {
@@ -139,5 +144,36 @@ class CirculacaoServiceTest {
         when(repository.primeiraReservaElegivel(1, 3)).thenReturn(Optional.of(7L));
         assertEquals("disponivel", service.devolver(10, 4).statusExemplar());
         verify(repository, never()).disponibilizarReserva(anyLong(), anyLong(), any(), any());
+    }
+
+    @Test void devolucaoComMultaEmiteAvisoMultaGerada() {
+        emprestimo(agora.toLocalDate().minusDays(5), null);
+        when(repository.gerarMulta(eq(10L), eq(5), any(), eq(agora))).thenReturn(99L);
+        service.devolver(10, 4);
+        verify(avisoService).criar(eq(50L), eq(TipoAviso.MULTA_GERADA), anyString(), anyString(),
+            eq(ReferenciaTipo.multa), eq(99L), isNull());
+    }
+
+    @Test void devolucaoComFilaEmiteAvisoReservaDisponivel() {
+        emprestimo(agora.toLocalDate(), null);
+        when(repository.primeiraReservaElegivel(1, 3)).thenReturn(Optional.of(7L));
+        service.devolver(10, 4);
+        verify(avisoService).criar(eq(60L), eq(TipoAviso.RESERVA_DISPONIVEL), anyString(), anyString(),
+            eq(ReferenciaTipo.reserva), eq(7L), isNull());
+    }
+
+    @Test void multaZeroNaoEmiteAviso() {
+        emprestimo(agora.toLocalDate(), null); // devolução no prazo → valor 0
+        service.devolver(10, 4);
+        verify(avisoService, never()).criar(any(), eq(TipoAviso.MULTA_GERADA), anyString(), anyString(),
+            any(), any(), any());
+    }
+
+    @Test void obraInativaNaoEmiteAvisoDeReserva() {
+        emprestimo(agora.toLocalDate(), null);
+        when(repository.travarExemplar(2)).thenReturn(new ExemplarDados(2, 1, false, "emprestado"));
+        service.devolver(10, 4);
+        verify(avisoService, never()).criar(any(), eq(TipoAviso.RESERVA_DISPONIVEL), anyString(), anyString(),
+            any(), any(), any());
     }
 }
