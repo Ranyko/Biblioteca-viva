@@ -83,8 +83,7 @@ dos síncronos continua apoiada em o gatilho ser único na operação de negóci
 ## 4. Decisão sobre o scheduler
 
 **Decisão: usar `@Scheduled`** — um artefato próprio no mesmo
-repositório, que comparte as classes de domínio/repositórios e o mesmo banco, mas roda como processo
-independente (sem expor HTTP). Config com
+repositório, que comparte as classes de domínio/repositórios e o mesmo banco. Config com
 `@Scheduled(cron = "${app.avisos.varredura-cron:0 0 6 * * *}", zone = "${app.biblioteca.zone-id:America/Sao_Paulo}")`
 e `@ConditionalOnProperty("app.avisos.varredura-habilitada")`. A API mantém o `POST /admin/avisos/varredura`
 (admin) como gatilho manual, executando a **mesma** lógica de varredura (lógica compartilhada, deploy distinto).
@@ -92,14 +91,9 @@ e `@ConditionalOnProperty("app.avisos.varredura-habilitada")`. A API mantém o `
 | Critério        | Por quê                                                                                                                                                                                                                                                                                              |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Necessidade     | **5 dos 7 tipos dependem da passagem do tempo**: `DEVIDA_AMANHA`, `VENCIDO`, `RESERVA_EXPIRANDO`, `RESERVA_EXPIRADA` e `FILA_POSICAO` só são detectáveis comparando as datas com o "hoje" (`Clock`). Não existe evento de usuário para _"hoje é o último dia"_ — datas "chegam" sem ação de ninguém. |
-| Isolamento      | O agendador roda **fora do processo da API**: a varredura não compete com requisições HTTP, uma falha/sobrecarga do job não derruba a API, cada processo escala e faz deploy de forma independente.                                                                                                  |
 | Multi-instância | Se o job rodar em mais de um processo, o índice único + `ON CONFLICT DO NOTHING` torna a duplicação inofensiva.                                                                                                                                                                                      |
 | Testabilidade   | Testes **não** dependem do cron: chamam o service (unitário, `Clock.fixed`) ou o endpoint manual (integração). O agendador é wrapper fino.                                                                                                                                                           |
 | Operação        | Botão "gerar avisos agora" (na API) + log estruturado de início/fim com contagem (no processo do job).                                                                                                                                                                                               |
-
-> **Descartados:** Quartz (overkill para 1 job diário; adiciona dependência e tabelas `QRTZ_*`) e "só endpoint
-> manual" (exige alguém lembrar de chamar todo dia — a fila volta a expirar por esquecimento, que é o problema
-> que a feature resolve). Nota: com múltiplas instâncias reais, trocar por `pg_advisory_lock` — não nesta entrega.
 
 ---
 
