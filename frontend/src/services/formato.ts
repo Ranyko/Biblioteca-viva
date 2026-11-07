@@ -25,3 +25,15 @@ export function diasDeAtraso(dataPrevista: string): number {
   const hoje = Date.UTC(aa, mm - 1, dd);
   return Math.max(0, Math.round((hoje - prevista) / 86_400_000));
 }
+
+/** Data e hora com fuso (OffsetDateTime do back) -> 'dd/mm/aaaa HH:mm' no horário de Brasília. */
+export function dataHoraMinBR(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

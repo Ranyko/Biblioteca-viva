@@ -3,6 +3,7 @@ import iconeBiblioteca from '../assets/book_open.svg';
 import { getUsuario, limparSessao } from '../services/api';
 import { MENU_POR_PERFIL } from '../auth/perfis';
 import type { Perfil } from '../services/usuarios';
+import { SinoAvisos } from './SinoAvisos';
 
 interface NavbarProps {
   userProfile?: {
@@ -53,6 +54,7 @@ export function Navbar({ userProfile }: NavbarProps) {
           </nav>
 
           <div className="user-profile">
+            {usuario?.perfil === 'leitor' && <SinoAvisos />}
             <span className="user-role">{usuario?.nome ?? userProfile.nome}</span>
             <div className="avatar-circle">
               {userProfile.avatarUrl ? (

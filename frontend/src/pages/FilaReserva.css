@@ -155,3 +155,17 @@ html, body, #root {
     font-size: 0.85rem;
   }
 }
+.reserva-card .btn-submit-blue {
+  background-color: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reserva-card .btn-submit-blue:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

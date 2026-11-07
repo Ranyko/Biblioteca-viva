@@ -39,6 +39,7 @@ export function Acervo() {
   const handleVerDetalhes = (obra: ObraAcervo) => {
     navigate('/reserva', {
       state: {
+        id: obra.id,
         titulo: obra.titulo,
         autor: obra.autores.join(', '),
         tipo: obra.categorias.join(', '),

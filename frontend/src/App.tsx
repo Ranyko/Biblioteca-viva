@@ -16,6 +16,9 @@ import { FilaReserva } from './pages/FilaReserva';
 import { CadastrarLivro } from './pages/CadastrarLivro';
 import { GerenciarLivros } from './pages/GerenciarLivros';
 import { GerenciarExemplares } from './pages/GerenciarExemplares';
+import { Avisos } from './pages/Avisos';
+import { Pendencias } from './pages/Pendencias';
+import { ConfigAvisos } from './pages/ConfigAvisos';
 
 const ADMIN: Perfil[] = ['administrador'];
 const ATENDENTE: Perfil[] = ['atendente'];
@@ -42,6 +45,8 @@ export function App() {
         <Route path="/livros/:id/editar" element={protegido(ADMIN, <CadastrarLivro />)} />
         <Route path="/exemplares" element={protegido(ADMIN, <GerenciarExemplares />)} />
 
+        <Route path="/config-avisos" element={protegido(ADMIN, <ConfigAvisos />)} />
+
         {/* Atendente */}
         <Route path="/leitores" element={protegido(ATENDENTE, <GerenciarLeitores />)} />
         <Route path="/leitores/cadastrar" element={protegido(ATENDENTE, <CadastrarLeitor />)} />
@@ -49,9 +54,12 @@ export function App() {
         <Route path="/devolucao" element={protegido(ATENDENTE, <Devolucao />)} />
         <Route path="/filareserva" element={protegido(ATENDENTE, <FilaReserva />)} />
 
+        <Route path="/pendencias" element={protegido(ATENDENTE, <Pendencias />)} />
+
         {/* Leitor */}
         <Route path="/acervo" element={protegido(LEITOR, <Acervo />)} />
         <Route path="/reserva" element={protegido(LEITOR, <Reserva />)} />
+        <Route path="/avisos" element={protegido(LEITOR, <Avisos />)} />
 
         <Route path="*" element={<h2 style={{ padding: '2rem' }}>Página não encontrada</h2>} />
       </Routes>
