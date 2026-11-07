@@ -17,6 +17,7 @@ import { CadastrarLivro } from './pages/CadastrarLivro';
 import { GerenciarLivros } from './pages/GerenciarLivros';
 import { GerenciarExemplares } from './pages/GerenciarExemplares';
 import { Avisos } from './pages/Avisos';
+import { MinhaSituacao } from './pages/MinhaSituacao';
 import { Pendencias } from './pages/Pendencias';
 import { ConfigAvisos } from './pages/ConfigAvisos';
 
@@ -60,6 +61,7 @@ export function App() {
         <Route path="/acervo" element={protegido(LEITOR, <Acervo />)} />
         <Route path="/reserva" element={protegido(LEITOR, <Reserva />)} />
         <Route path="/avisos" element={protegido(LEITOR, <Avisos />)} />
+        <Route path="/minha-situacao" element={protegido(LEITOR, <MinhaSituacao />)} />
 
         <Route path="*" element={<h2 style={{ padding: '2rem' }}>Página não encontrada</h2>} />
       </Routes>

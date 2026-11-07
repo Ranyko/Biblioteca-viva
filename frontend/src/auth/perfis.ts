@@ -36,6 +36,7 @@ export const MENU_POR_PERFIL: Record<Perfil, ItemMenu[]> = {
   ],
   leitor: [
     { rotulo: 'Acervo', to: '/acervo', ativoEm: ['/acervo', '/reserva'] },
+    { rotulo: 'Minha situação', to: '/minha-situacao' },
     { rotulo: 'Avisos', to: '/avisos' },
   ],
 };
