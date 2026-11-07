@@ -3,6 +3,7 @@ import { Navbar } from '../components/Navbar';
 import { getUsuario, textoErro } from '../services/api';
 import { exemplaresService, livrosService } from '../services/catalogo';
 import { painelService, type PainelBiblioteca } from '../services/painel';
+import { baixarMovimentacoesCsv } from '../services/relatorios';
 import './Dashboard.css';
 
 import icon1 from '../assets/icone-dashboard2.svg';
@@ -37,6 +38,10 @@ export function Dashboard() {
   const [painel, setPainel] = useState<PainelBiblioteca | null>(null);
   const [totais, setTotais] = useState<Totais | null>(null);
   const [erro, setErro] = useState('');
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+  const [exportando, setExportando] = useState(false);
+  const [erroExport, setErroExport] = useState('');
 
   useEffect(() => {
     let cancelado = false;
@@ -58,6 +63,22 @@ export function Dashboard() {
       cancelado = true;
     };
   }, []);
+
+  const exportar = async () => {
+    setErroExport('');
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+      setErroExport('A data inicial não pode ser posterior à data final.');
+      return;
+    }
+    setExportando(true);
+    try {
+      await baixarMovimentacoesCsv(dataInicio || undefined, dataFim || undefined);
+    } catch (err) {
+      setErroExport(textoErro(err));
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const fatias = painel ? fatiasDoGrafico(painel) : [];
   const gradiente = fatias.map((f) => `${f.cor} ${f.inicio}% ${f.fim}%`).join(', ');
@@ -157,6 +178,25 @@ export function Dashboard() {
               </ol>
             )}
           </div>
+        </div>
+
+        <div className="chart-card export-card">
+          <h2 className="chart-title">Exportar movimentações (CSV)</h2>
+          <div className="export-form">
+            <label>
+              De
+              <input type="date" value={dataInicio} max={dataFim || undefined} onChange={(e) => setDataInicio(e.target.value)} />
+            </label>
+            <label>
+              Até
+              <input type="date" value={dataFim} min={dataInicio || undefined} onChange={(e) => setDataFim(e.target.value)} />
+            </label>
+            <button type="button" className="export-btn" onClick={exportar} disabled={exportando}>
+              {exportando ? 'Gerando...' : 'Baixar CSV'}
+            </button>
+          </div>
+          <p className="export-ajuda">Deixe as datas em branco para exportar todos os períodos.</p>
+          {erroExport && <p style={{ color: '#b91c1c', margin: '0.5rem 0 0' }}>{erroExport}</p>}
         </div>
       </main>
     </div>
