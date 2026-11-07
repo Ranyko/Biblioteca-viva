@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { getUsuario, textoErro } from '../services/api';
 import { pesquisarAcervo, type ObraAcervo } from '../services/acervo';
+import { sugestoesService, type Sugestao } from '../services/painel';
 import './Acervo.css';
 
 export function Acervo() {
@@ -11,7 +12,24 @@ export function Acervo() {
   const [truncado, setTruncado] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [sugestoes, setSugestoes] = useState<Sugestao[]>([]);
   const navigate = useNavigate();
+
+  // H15: sugestões a partir do histórico do leitor (falha silenciosa: é um extra da tela).
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const lista = await sugestoesService.listar();
+        if (!cancelado) setSugestoes(lista);
+      } catch {
+        // sem sugestões, a tela segue só com a busca
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   // Pesquisa no back a cada mudança do termo (com pequena espera enquanto a pessoa digita).
   useEffect(() => {
@@ -50,12 +68,53 @@ export function Acervo() {
     });
   };
 
+  // A sugestão não traz autor nem ISBN: completa os dados pela busca no acervo antes de abrir os detalhes.
+  const handleVerSugestao = async (s: Sugestao) => {
+    let obra: ObraAcervo | undefined;
+    try {
+      obra = (await pesquisarAcervo(s.titulo)).obras.find((o) => o.id === s.livroId);
+    } catch {
+      // usa só o que a sugestão trouxe
+    }
+    if (obra) return handleVerDetalhes(obra);
+    navigate('/reserva', {
+      state: {
+        id: s.livroId,
+        titulo: s.titulo,
+        autor: '—',
+        tipo: s.categoria,
+        exemplaresDisponiveis: s.exemplaresDisponiveis,
+        descricao: s.descricao ?? undefined,
+      },
+    });
+  };
+
   return (
     <div className="app-container">
       <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Usuário' }} />
 
       <main className="acervo-container">
         <h1 className="page-title">Acervo</h1>
+
+        {sugestoes.length > 0 && (
+          <section className="sugestoes-card">
+            <h2 className="sugestoes-titulo">Sugestões para você</h2>
+            <div className="sugestoes-lista">
+              {sugestoes.map((s) => (
+                <div key={s.livroId} className="sugestao-item">
+                  <h3 className="livro-titulo">{s.titulo}</h3>
+                  <p className="livro-tipo">{s.categoria}</p>
+                  <p className="livro-qtd">
+                    Disponíveis: <strong>{s.exemplaresDisponiveis}</strong>
+                  </p>
+                  <button type="button" className="btn-ver-detalhes" onClick={() => handleVerSugestao(s)}>
+                    Ver detalhes
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="acervo-card">
           {}

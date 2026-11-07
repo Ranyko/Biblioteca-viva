@@ -47,6 +47,15 @@ function mensagemPadrao(status: number): string {
   }
 }
 
+async function tokenAindaValido(token: string): Promise<boolean> {
+  try {
+    const r = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function api<T>(
   path: string,
   options: { method?: string; body?: unknown } = {},
@@ -68,7 +77,11 @@ export async function api<T>(
   }
 
   if (response.status === 401) {
-    // Token ausente/expirado: limpa a sessão e volta para o login.
+    // O Spring também responde 401 para rota inexistente (o /error exige login). Só desloga
+    // se o token for mesmo inválido: confirma em /auth/me antes de apagar a sessão.
+    if (token && path !== '/auth/me' && (await tokenAindaValido(token))) {
+      throw new ApiError(404, 'Recurso indisponível nesta versão do servidor.');
+    }
     limparSessao();
     if (window.location.pathname !== '/') window.location.assign('/');
     throw new ApiError(401, mensagemPadrao(401));

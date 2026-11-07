@@ -189,3 +189,21 @@ html, body, #root {
     grid-template-columns: 1fr;
   }
 }
+.sugestoes-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+.sugestoes-titulo { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 1rem; }
+.sugestoes-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
+.sugestao-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.sugestao-item .btn-ver-detalhes { margin-top: auto; align-self: flex-start; }

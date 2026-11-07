@@ -1,4 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
+import { getUsuario, textoErro } from '../services/api';
+import { exemplaresService, livrosService } from '../services/catalogo';
+import { painelService, type PainelBiblioteca } from '../services/painel';
 import './Dashboard.css';
 
 import icon1 from '../assets/icone-dashboard2.svg';
@@ -6,20 +10,74 @@ import icon2 from '../assets/icone-dashboard4.svg';
 import icon3 from '../assets/icone-dashboard3.svg';
 import icon4 from '../assets/icone-dashboard1.svg';
 
+const CORES = ['#2563eb', '#60a5fa', '#a5b4fc', '#34d399', '#fbbf24', '#f87171', '#9ca3af'];
+const MAX_FATIAS = 6; // as demais categorias viram "Outras"
+
+interface Totais {
+  livros: number;
+  exemplares: number;
+}
+
+/** Junta as categorias menores em "Outras" e calcula o percentual de cada fatia. */
+function fatiasDoGrafico(painel: PainelBiblioteca) {
+  const ordenadas = [...painel.emprestimosPorCategoria].sort((a, b) => b.totalEmprestimos - a.totalEmprestimos);
+  const principais = ordenadas.slice(0, MAX_FATIAS).map((c) => ({ nome: c.categoria, total: c.totalEmprestimos }));
+  const resto = ordenadas.slice(MAX_FATIAS).reduce((soma, c) => soma + c.totalEmprestimos, 0);
+  if (resto > 0) principais.push({ nome: 'Outras', total: resto });
+  const soma = principais.reduce((s, f) => s + f.total, 0);
+  return principais.map((f, i) => {
+    const antes = principais.slice(0, i).reduce((s, x) => s + x.total, 0);
+    const inicio = soma ? (antes / soma) * 100 : 0;
+    const pct = soma ? (f.total / soma) * 100 : 0;
+    return { ...f, cor: CORES[i % CORES.length], pct, inicio, fim: inicio + pct };
+  });
+}
+
 export function Dashboard() {
+  const [painel, setPainel] = useState<PainelBiblioteca | null>(null);
+  const [totais, setTotais] = useState<Totais | null>(null);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const p = await painelService.consultar();
+        if (!cancelado) setPainel(p);
+      } catch (err) {
+        if (!cancelado) setErro(textoErro(err));
+      }
+      try {
+        const [livros, exemplares] = await Promise.all([livrosService.listar(0, 1), exemplaresService.listar(0, 1)]);
+        if (!cancelado) setTotais({ livros: livros.total, exemplares: exemplares.total });
+      } catch {
+        // os dois totais são complementares; o painel principal já tem seu próprio erro
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const fatias = painel ? fatiasDoGrafico(painel) : [];
+  const gradiente = fatias.map((f) => `${f.cor} ${f.inicio}% ${f.fim}%`).join(', ');
+
+  const valor = (n: number | undefined) => (n === undefined ? '—' : n.toLocaleString('pt-BR'));
+
   return (
     <div className="app-container">
-      <Navbar userProfile={{ nome: 'Administrador' }} />
+      <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Administrador' }} />
 
       <main className="dashboard-container">
         <h1 className="dashboard-title">Dashboard</h1>
 
-        {/* 4 Cards Superiores */}
+        {erro && <p style={{ color: '#b91c1c', textAlign: 'center', marginBottom: '1rem' }}>{erro}</p>}
+
         <div className="metrics-grid">
           <div className="metric-card">
             <div className="metric-info">
               <span className="metric-label">Empréstimos Ativos</span>
-              <span className="metric-value">760</span>
+              <span className="metric-value">{valor(painel?.emprestimosAtivos)}</span>
             </div>
             <div className="metric-icon-bg icon-blue">
               <img src={icon1} alt="Empréstimos Ativos" width={24} height={24} />
@@ -29,7 +87,7 @@ export function Dashboard() {
           <div className="metric-card">
             <div className="metric-info">
               <span className="metric-label">Atrasados</span>
-              <span className="metric-value">50</span>
+              <span className="metric-value">{valor(painel?.emprestimosAtrasados)}</span>
             </div>
             <div className="metric-icon-bg icon-yellow">
               <img src={icon2} alt="Atrasados" width={24} height={24} />
@@ -38,18 +96,18 @@ export function Dashboard() {
 
           <div className="metric-card">
             <div className="metric-info">
-              <span className="metric-label">Reservas</span>
-              <span className="metric-value">88</span>
+              <span className="metric-label">Total de Exemplares</span>
+              <span className="metric-value">{valor(totais?.exemplares)}</span>
             </div>
             <div className="metric-icon-bg icon-green">
-              <img src={icon3} alt="Reservas" width={24} height={24} />
+              <img src={icon3} alt="Total de Exemplares" width={24} height={24} />
             </div>
           </div>
 
           <div className="metric-card">
             <div className="metric-info">
               <span className="metric-label">Total de Livros</span>
-              <span className="metric-value">2040</span>
+              <span className="metric-value">{valor(totais?.livros)}</span>
             </div>
             <div className="metric-icon-bg icon-orange">
               <img src={icon4} alt="Total de Livros" width={24} height={24} />
@@ -57,44 +115,47 @@ export function Dashboard() {
           </div>
         </div>
 
-        {}
         <div className="charts-grid">
-          {}
           <div className="chart-card">
             <h2 className="chart-title">Empréstimos por Categoria</h2>
-            <div className="donut-chart-wrapper">
-              <div className="donut-placeholder">
-                <div className="donut-inner"></div>
+            {!painel ? (
+              <p style={{ textAlign: 'center', color: '#6b7280' }}>{erro ? '' : 'Carregando...'}</p>
+            ) : fatias.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#6b7280' }}>Nenhum empréstimo registrado.</p>
+            ) : (
+              <div className="donut-chart-wrapper">
+                <div className="donut-placeholder" style={{ background: `conic-gradient(${gradiente})` }}>
+                  <div className="donut-inner"></div>
+                </div>
+                <div className="chart-legend">
+                  {fatias.map((f) => (
+                    <div className="legend-item" key={f.nome}>
+                      <span className="legend-color" style={{ backgroundColor: f.cor }}></span>
+                      <span>
+                        {Math.round(f.pct)}% {f.nome} ({f.total})
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="chart-legend">
-                <div className="legend-item">
-                  <span className="legend-color" style={{ backgroundColor: '#2563eb' }}></span>
-                  <span>44% Ficção</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-color" style={{ backgroundColor: '#60a5fa' }}></span>
-                  <span>33% Romance</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-color" style={{ backgroundColor: '#a5b4fc' }}></span>
-                  <span>23% Autoajuda</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {}
           <div className="chart-card">
             <h2 className="chart-title">Livros mais Emprestados</h2>
-            <ul className="top-books-list">
-              <li>Dom Casmurro de Machado de Assis</li>
-              <li>1984 de George Orwell</li>
-              <li>O Pequeno Príncipe de Antoine de Saint-Exupéry</li>
-              <li>Harry Potter e a Pedra Filosofal de J. K. Rowling</li>
-              <li>A Metamorfose de Franz Kafka</li>
-              <li>O Senhor dos Anéis: A Sociedade do Anel de J. R. Tolkien</li>
-              <li>Cem Anos de Solidão de Gabriel García Márquez</li>
-            </ul>
+            {!painel ? (
+              <p style={{ textAlign: 'center', color: '#6b7280' }}>{erro ? '' : 'Carregando...'}</p>
+            ) : painel.rankingObras.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#6b7280' }}>Nenhum empréstimo registrado.</p>
+            ) : (
+              <ol className="top-books-list">
+                {painel.rankingObras.map((o) => (
+                  <li key={o.livroId}>
+                    {o.titulo} — {o.totalEmprestimos} {o.totalEmprestimos === 1 ? 'empréstimo' : 'empréstimos'}
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         </div>
       </main>
