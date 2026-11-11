@@ -39,7 +39,7 @@ Permitir que a equipe da biblioteca crie clubes de leitura, programe encontros a
 - Um leitor ativo pode inscrever-se em um encontro aberto enquanto houver vagas.
 - A inscrição é única por leitor e encontro. O leitor pode cancelá-la antes do início do encontro.
 - Quando a capacidade for atingida, novas inscrições são recusadas; não há fila de espera nesta proposta.
-- O atendente pode registrar a presença dos inscritos após o encontro. O registro não altera empréstimos, multas ou a situação cadastral do leitor.
+- A partir do início do encontro, o atendente pode registrar a presença ou ausência dos inscritos. O registro não altera empréstimos, multas ou a situação cadastral do leitor.
 - O leitor consulta seus encontros futuros e seu histórico de participações.
 
 ## 5. Regras de negócio
@@ -70,9 +70,96 @@ Permitir que a equipe da biblioteca crie clubes de leitura, programe encontros a
 1. O administrador cria um clube e define suas informações básicas.
 2. Um administrador ou atendente agenda um encontro, informa local e horário e associa uma obra do acervo.
 3. Leitores consultam o encontro e fazem suas inscrições até o limite definido.
-4. Após o encontro, o atendente registra a presença dos inscritos; a atividade passa para concluída.
+4. A partir do início do encontro, o atendente registra a presença ou ausência dos inscritos; após todos os registros, a atividade pode ser concluída.
 
-## 7. Critérios de aceite
+## 7. Interface da API
+
+As rotas abaixo são autenticadas e usam os prefixos de perfil do sistema.
+
+### 7.1 Clubes — administrador
+
+| Método e rota | Descrição |
+|---|---|
+| `GET /admin/clubes-leitura` | Lista clubes, incluindo encerrados. Filtros opcionais: `nome`, `categoriaId`, `pagina` e `tamanho`. |
+| `GET /admin/clubes-leitura/{id}` | Consulta os dados de um clube. |
+| `POST /admin/clubes-leitura` | Cria um clube; o usuário autenticado fica registrado como responsável. Retorna `201 Created`. |
+| `PUT /admin/clubes-leitura/{id}` | Atualiza os dados do clube e substitui seus vínculos de categoria. |
+| `PATCH /admin/clubes-leitura/{id}/status` | Encerra ou reativa um clube. |
+
+O corpo para criação e atualização segue este formato:
+
+```json
+{
+  "nome": "Clube de leitura contemporânea",
+  "descricao": "Encontros mensais para conversar sobre literatura.",
+  "capacidadeMaxima": 12,
+  "periodicidade": "Mensal",
+  "categoriaIds": [1, 3]
+}
+```
+
+`nome` é obrigatório e aceita até 160 caracteres; `capacidadeMaxima` é obrigatória e deve estar entre `1` e `32767`; `periodicidade` aceita até 80 caracteres; `categoriaIds` é opcional, aceita até 50 IDs positivos e distintos. `descricao` é opcional.
+
+Para alterar a situação, envie:
+
+```json
+{ "status": "encerrado" }
+```
+
+Os valores aceitos são `ativo` e `encerrado`. A resposta do clube contém `id`, `nome`, `descricao`, `status`, `capacidadeMaxima`, `periodicidade`, `responsavelId`, `criadoEm` e `categorias` (lista de referências com `id` e `nome`).
+
+### 7.2 Clubes e encontros — equipe
+
+As operações estão disponíveis para atendentes e administradores.
+
+| Método e rota | Descrição |
+|---|---|
+| `GET /atendente/clubes-leitura` | Lista clubes, incluindo encerrados. Filtros opcionais: `nome`, `categoriaId`, `pagina` e `tamanho`. |
+| `GET /atendente/clubes-leitura/{clubeId}/encontros` | Lista encontros do clube, com `pagina` e `tamanho` opcionais. |
+| `POST /atendente/clubes-leitura/{clubeId}/encontros` | Agenda um encontro. Retorna `201 Created`. |
+| `PUT /atendente/clubes-leitura/{clubeId}/encontros/{encontroId}` | Atualiza um encontro aberto e ainda não iniciado. |
+| `PATCH /atendente/clubes-leitura/{clubeId}/encontros/{encontroId}/cancelar` | Cancela um encontro aberto que ainda não começou. |
+| `PATCH /atendente/clubes-leitura/{clubeId}/encontros/{encontroId}/concluir` | Conclui um encontro iniciado, após o registro de presença ou ausência de todas as inscrições confirmadas. |
+| `GET /atendente/clubes-leitura/{clubeId}/encontros/{encontroId}/inscricoes` | Lista participantes e informações de presença; aceita `pagina` e `tamanho`. |
+| `PATCH /atendente/clubes-leitura/{clubeId}/encontros/{encontroId}/inscricoes/{leitorId}/presenca` | Registra ou atualiza a presença de um leitor inscrito, após o início do encontro. |
+
+O corpo para criar ou atualizar encontro:
+
+```json
+{
+  "livroId": 42,
+  "dataHora": "2026-12-10T18:30:00-03:00",
+  "localOuAcesso": "Sala de leitura"
+}
+```
+
+Todos os campos são obrigatórios. `livroId` deve identificar um livro existente, `dataHora` deve estar no futuro ao criar ou atualizar, e `localOuAcesso` aceita até 1000 caracteres.
+
+Para presença, envie `{ "presente": true }` ou `{ "presente": false }`. A resposta do encontro contém `id`, `clubeId`, `clubeNome`, `livroId`, `livroTitulo`, `dataHora`, `localOuAcesso`, `status`, `capacidadeMaxima`, `inscricoesConfirmadas`, `vagasDisponiveis` e `criadoEm`. A resposta de cada participante contém `leitorId`, `nome`, `statusInscricao`, `inscritoEm`, `presente` e `presencaRegistradaEm`.
+
+### 7.3 Consulta, inscrições e histórico — leitor
+
+| Método e rota | Descrição |
+|---|---|
+| `GET /leitor/clubes-leitura` | Lista somente clubes ativos. Filtros opcionais: `nome`, `categoriaId`, `pagina` e `tamanho`. |
+| `GET /leitor/clubes-leitura/{clubeId}/encontros` | Lista encontros de um clube ativo, com `pagina` e `tamanho` opcionais. |
+| `GET /leitor/clubes-leitura/{clubeId}/encontros/{encontroId}` | Consulta os detalhes de um encontro de clube ativo. |
+| `POST /leitor/encontros-clube/{encontroId}/inscricao` | Inscreve o leitor autenticado em um encontro. Retorna `201 Created`. |
+| `DELETE /leitor/encontros-clube/{encontroId}/inscricao` | Cancela a própria inscrição antes do início do encontro. |
+| `GET /leitor/minhas-inscricoes` | Consulta as próprias inscrições; aceita `historico`, `pagina` e `tamanho`. `historico` é `false` por padrão. |
+
+Inscrição e cancelamento não exigem corpo. A inscrição só é permitida a leitores ativos, em encontro aberto de clube ativo, antes do início e enquanto houver vaga; uma inscrição anterior, mesmo cancelada, impede nova inscrição para o mesmo encontro. `historico=false` retorna inscrições confirmadas para encontros futuros de clubes ativos; `historico=true` retorna inscrições canceladas ou vinculadas a encontros passados, cancelados ou concluídos.
+
+A resposta de uma inscrição contém `id`, `encontroId`, `leitorId`, `status`, `inscritoEm`, `canceladoEm`, `presente` e `presencaRegistradaEm`. A listagem de inscrições próprias também inclui dados do clube e do livro, data e local do encontro, status do encontro e status da inscrição.
+
+### 7.4 Situações e validações
+
+- Situações de clube: `ativo` e `encerrado`; de encontro: `aberto`, `cancelado` e `concluido`; de inscrição: `confirmada` e `cancelada`.
+- IDs de recursos devem ser positivos. Paginação inválida e corpos que não atendem às validações são rejeitados.
+- Inscrições excedentes, duplicadas ou fora das condições de participação são recusadas; alterações incompatíveis com o estado do encontro também são recusadas.
+- Os erros seguem o formato JSON de erros já adotado pela API.
+
+## 8. Critérios de aceite
 
 - [ ] Administrador consegue criar, editar, encerrar e reativar um clube.
 - [ ] Equipe consegue agendar, atualizar e cancelar encontros, associando-os a livros cadastrados.
@@ -83,7 +170,7 @@ Permitir que a equipe da biblioteca crie clubes de leitura, programe encontros a
 - [ ] Leitor consegue consultar suas inscrições futuras e seu histórico de participações.
 - [ ] Encerramento de clube não remove registros históricos nem altera dados de circulação.
 
-## 8. Modelo conceitual sugerido
+## 9. Modelo conceitual sugerido
 
 | Entidade | Informações principais | Relações |
 |---|---|---|
@@ -93,7 +180,7 @@ Permitir que a equipe da biblioteca crie clubes de leitura, programe encontros a
 
 `InscricaoEncontro` deve ter uma restrição de unicidade para o par leitor/encontro. A capacidade deve ser validada de forma consistente mesmo quando duas inscrições forem solicitadas simultaneamente.
 
-## 9. Fora de escopo
+## 10. Fora de escopo
 
 - Fórum, comentários, avaliações ou conversas entre participantes.
 - Videoconferência, transmissão ao vivo ou integração com serviços externos.
@@ -102,6 +189,6 @@ Permitir que a equipe da biblioteca crie clubes de leitura, programe encontros a
 - Recomendações automáticas de clubes ou notificações por e-mail, SMS ou WhatsApp.
 - Gamificação, metas individuais de leitura e ranking de participantes.
 
-## 10. Benefício esperado
+## 11. Benefício esperado
 
 A funcionalidade amplia o papel do Biblioteca Viva como ferramenta de uma biblioteca comunitária: além de organizar o acervo, ajuda a promover encontros presenciais em torno da leitura, mantendo o cadastro de participantes e o histórico das atividades em um só lugar.
