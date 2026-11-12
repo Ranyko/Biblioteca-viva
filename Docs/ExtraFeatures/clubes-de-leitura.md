@@ -157,7 +157,20 @@ A resposta de uma inscrição contém `id`, `encontroId`, `leitorId`, `status`, 
 - Situações de clube: `ativo` e `encerrado`; de encontro: `aberto`, `cancelado` e `concluido`; de inscrição: `confirmada` e `cancelada`.
 - IDs de recursos devem ser positivos. Paginação inválida e corpos que não atendem às validações são rejeitados.
 - Inscrições excedentes, duplicadas ou fora das condições de participação são recusadas; alterações incompatíveis com o estado do encontro também são recusadas.
-- Os erros seguem o formato JSON de erros já adotado pela API.
+
+### 7.5 Códigos HTTP de erro
+
+| Código | Quando ocorre nesta funcionalidade |
+|---|---|
+| `400 Bad Request` | JSON malformado, campo obrigatório ou inválido, ID não positivo, paginação inválida ou situação de clube não reconhecida (`ativo`/`encerrado`). |
+| `401 Unauthorized` | Token ausente, inválido ou expirado. |
+| `403 Forbidden` | Usuário autenticado sem o perfil exigido pela rota. |
+| `404 Not Found` | Clube, encontro, livro, categoria, cadastro de leitor ou inscrição inexistente. Para leitores, clubes encerrados também são ocultados como não encontrados nas consultas públicas. |
+| `409 Conflict` | Regra de negócio impede a operação: encontro não aberto ou já iniciado, clube encerrado, encontro lotado, inscrição duplicada (inclusive após cancelamento), cancelamento fora do prazo ou alteração incompatível com o estado atual. Restrições de integridade do banco também são retornadas como conflito. |
+
+Por exemplo, tentar inscrever-se em um encontro cancelado ou concluído retorna `409 Conflict` com a mensagem `Encontro não está aberto`. Enviar uma data passada, por outro lado, retorna `400 Bad Request`; informar um ID de encontro inexistente retorna `404 Not Found`.
+
+Erros tratados pela aplicação usam o formato JSON `{ "timestamp", "status", "erro", "mensagem", "caminho", "campos" }`; `campos` detalha erros de validação quando aplicável. As respostas de autenticação e autorização (`401` e `403`) são produzidas pela configuração do Spring Security e contêm somente o status HTTP, sem esse corpo JSON.
 
 ## 8. Critérios de aceite
 
