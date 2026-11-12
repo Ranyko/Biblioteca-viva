@@ -80,16 +80,16 @@ public class ClubeLeituraRepository {
             rs.getObject("inscrito_em", OffsetDateTime.class), rs.getObject("cancelado_em", OffsetDateTime.class),
             rs.getObject("presente", Boolean.class), rs.getObject("presenca_registrada_em", OffsetDateTime.class));
 
-    public PaginaResponse<ClubeLeituraResponse> listarClubes(boolean equipe, String nome, Long categoriaId,
+    public PaginaResponse<ClubeLeituraResponse> listarClubes(boolean incluirEncerrados, String nome, Long categoriaId,
             int pagina, int tamanho) {
         var parametros = new MapSqlParameterSource()
-            .addValue("equipe", equipe)
+            .addValue("incluirEncerrados", incluirEncerrados)
             .addValue("nome", nome)
             .addValue("categoriaId", categoriaId, java.sql.Types.BIGINT)
             .addValue("tamanho", tamanho)
             .addValue("offset", (long) pagina * tamanho);
         String filtro = """
-            WHERE (:equipe = TRUE OR c.status = 'ativo')
+            WHERE (:incluirEncerrados = TRUE OR c.status = 'ativo')
               AND (CAST(:nome AS VARCHAR) IS NULL OR c.nome ILIKE '%' || :nome || '%')
               AND (CAST(:categoriaId AS BIGINT) IS NULL OR EXISTS (
                     SELECT 1 FROM clube_leitura_categoria cc

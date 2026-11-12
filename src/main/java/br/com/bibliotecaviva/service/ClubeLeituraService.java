@@ -31,12 +31,12 @@ public class ClubeLeituraService {
     }
 
     @Transactional(readOnly = true)
-    public PaginaResponse<ClubeLeituraResponse> listarClubes(boolean equipe, String nome, Long categoriaId,
+    public PaginaResponse<ClubeLeituraResponse> listarClubes(boolean incluirEncerrados, String nome, Long categoriaId,
             int pagina, int tamanho) {
         validarPaginacao(pagina, tamanho);
         if (categoriaId != null) positivo(categoriaId);
         String filtro = nome == null || nome.isBlank() ? null : nome.trim();
-        return repository.listarClubes(equipe, filtro, categoriaId, pagina, tamanho);
+        return repository.listarClubes(incluirEncerrados, filtro, categoriaId, pagina, tamanho);
     }
 
     @Transactional(readOnly = true)
