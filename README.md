@@ -6,6 +6,8 @@ API do sistema de controle de biblioteca comunitária desenvolvido na disciplina
 
 O backend reúne autenticação, usuários e leitores da Sprint 1 (H1–H3) e cadastro de livros, autores, categorias e exemplares, pesquisa do acervo, empréstimos e devoluções da Sprint 2 (H4–H8). H4/H5 foram replanejadas da Sprint 1 e implementadas na Sprint 2. Os resultados de cada etapa estão registrados nos documentos das respectivas sprints.
 
+Na Sprint 3, a contribuição de backend documentada nesta entrega inclui a consulta e a baixa de multas (H11) e a configuração das regras da biblioteca (H13). Consulte o [relatório do backend H11/H13](Docs/Sprints/Sprint-3/sprint-3-relatorio.md).
+
 Em 02/10/2026, Raniery executou a validação local no Windows 11, com Java 21.0.4 e PostgreSQL 15.19: **111 testes automatizados aprovados, zero falhas, zero erros e zero ignorados**, incluindo 44 testes de integração com banco. Os **13 cenários Postman** de H4–H8 tiveram os retornos esperados. Consulte o [relatório da Sprint 2](Docs/Sprints/Sprint-2/sprint-2-relatorio.md) e as [evidências](Docs/Sprints/Sprint-2/sprint-2-evidencias-teste.md).
 
 ### Fundação da Sprint 1
@@ -215,8 +217,42 @@ Conservação: `novo`, `bom`, `regular`, `danificado`. O servidor define `status
 - Ordem compartilhada de travas: **livro → exemplar**, seguida de usuário/leitor na retirada ou empréstimo/reserva na devolução. Alterações manuais de exemplar seguem essa mesma ordem.
 - Módulos que alterem fila/alocação de reservas precisam travar o mesmo livro antes das alterações. A gestão completa de reservas continua fora deste complemento.
 - H7 aceita exemplar reservado somente para seu titular e antes do prazo; a reserva passa a atendida. Esse comportamento corresponde ao cenário de retirada de reserva própria previsto no plano de testes.
-- H8 aplica `mínimo(dias × diária, teto)`, preserva diária/teto aplicados e não cria multa pendente de valor zero. A geração de multa na devolução não implementa consulta/baixa de multas.
+- H8 aplica `mínimo(dias × diária, teto)`, preserva diária/teto aplicados e não cria multa pendente de valor zero. A consulta e a baixa de multas são oferecidas pelos endpoints H11 descritos abaixo.
 - Datas e funcionário responsável vêm do servidor/token. `leitorId` é o ID da tabela leitor, distinto de `usuarioId`. Fuso padrão: `America/Sao_Paulo`.
+
+## Contrato do backend H11 e H13
+
+As rotas exigem JWT. Consultas, atualização e baixa retornam HTTP 200; dados inválidos retornam 400, falta de autenticação 401, perfil incompatível 403, registro ausente 404 e conflito na baixa 409.
+
+| Método e rota | Permissão | Finalidade |
+|---|---|---|
+| `GET /atendente/multas` | Atendente ou administrador | Listar multas com paginação e filtros |
+| `GET /atendente/multas/{id}` | Atendente ou administrador | Consultar multa e seus valores históricos |
+| `POST /atendente/multas/{id}/baixa` | Atendente ou administrador | Registrar quitação; sem corpo |
+| `GET /admin/configuracao` | Administrador | Consultar as regras vigentes |
+| `PUT /admin/configuracao` | Administrador | Substituir o conjunto completo de regras |
+
+A listagem retorna `{itens,pagina,tamanho,total}` e aceita `status=pendente|quitada|cancelada`, `leitorId`, `emprestimoId`, `pagina=0` e `tamanho=20` (máximo 100). Sem situação, lista todas. O identificador do leitor é o da tabela `leitor`. A ordenação é por ID da multa, decrescente.
+
+A multa retorna `id`, `emprestimoId`, `leitorId`, `exemplarId`, `diasAtraso`, `valorDiarioAplicado`, `valorMaximoAplicado`, `valorTotal`, `status`, `geradaEm` e `pagaEm`. A baixa altera somente situação e data de pagamento. Somente multa pendente e sem pagamento registrado pode receber baixa; repetição ou disputa simultânea retorna 409. `pagaEm` vem do relógio do servidor.
+
+Configuração — PUT completo:
+
+```json
+{
+  "prazoEmprestimoDias": 14,
+  "limiteEmprestimos": 3,
+  "valorMultaDia": 2.50,
+  "valorMaximoMulta": 25.00,
+  "prazoRetiradaReservaDias": 2
+}
+```
+
+Os cinco campos são obrigatórios. Prazos e limite aceitam inteiros de 1 a 32767. Diária e teto aceitam valores de 0 a 99999999.99, com até duas casas decimais. A resposta inclui `id: 1` e `atualizadoEm`, definido pelo servidor. Cada PUT grava o conjunto completo de forma atômica; em duas atualizações simultâneas, prevalece a última gravação.
+
+As regras passam a valer nas operações posteriores: empréstimos já abertos mantêm a data prevista, e multas já geradas preservam diária, teto e total. A diária e o teto de uma nova multa são os vigentes na devolução. Diária ou teto zero permitem devolução sem gerar cobrança.
+
+A [coleção Postman H11/H13](Docs/Postman/sprint-3-h11-h13.postman_collection.json) reúne 13 requisições. A baixa exige uma multa pendente; a consulta da lista seleciona seu ID. A última requisição restaura a configuração lida no início. Os resultados automatizados estão nas [evidências da Sprint 3](Docs/Sprints/Sprint-3/sprint-3-evidencias-teste.md).
 
 ## Como a autenticação funciona
 
@@ -249,9 +285,11 @@ As [Evidências da Sprint 1](Docs/Sprints/Sprint-1/sprint-1-evidencias-teste.md)
 
 Os fluxos HTTP demonstrados estão reunidos na [coleção Postman da Sprint 1](Docs/Postman/sprint-1.postman_collection.json), com os resultados registrados nas evidências.
 
-### Suíte H4–H8
+### Suíte de testes do backend
 
-A execução local de 02/10/2026 aprovou os 111 casos. Com o banco descartável configurado, `./mvnw clean verify` (macOS/Linux) ou `.\mvnw.cmd clean verify` (PowerShell) executa a suíte: 67 de serviço/MVC e 44 de PostgreSQL, incluindo os testes originais e regressões da Sprint 1. Sem `SPRINT2_TEST_DB_URL`, os 44 casos de banco são ignorados. Usar exclusivamente o banco de testes, pois a fixture usa TRUNCATE.
+A execução local de 02/10/2026 aprovou os 111 casos registrados naquela entrega. A suíte atual inclui três regressões posteriores de circulação e os 35 casos H11/H13. Em 16/10/2026, Raniery executou localmente a suíte completa e obteve **149 testes aprovados: 67 de serviço/segurança/MVC e 82 de PostgreSQL**, sem falhas, erros ou casos ignorados. Os resultados estão registrados nas [evidências da Sprint 3](Docs/Sprints/Sprint-3/sprint-3-evidencias-teste.md).
+
+Com o banco descartável configurado, execute `./mvnw clean verify` (macOS/Linux) ou `.\mvnw.cmd clean verify` (PowerShell). Sem `SPRINT2_TEST_DB_URL`, os 82 casos de banco são ignorados. Usar exclusivamente o banco de testes, pois a fixture usa TRUNCATE.
 
 ### Testes de integração com PostgreSQL
 
@@ -280,7 +318,7 @@ $env:SPRINT2_TEST_DB_PASSWORD="postgres"
 
 **A suíte usa TRUNCATE antes de cada caso. Nunca apontar para o banco da biblioteca.** A URL deve conter um banco terminado em `_sprint2_test`. Depois, `docker stop biblioteca-sprint2-test` remove apenas esse container descartável, criado com `--rm`.
 
-As classes `CirculacaoPostgresTest` e `CatalogoPostgresTest` contêm casos para SQL, Flyway, autorização/JWT, vínculos, duplicidade, rollback, concorrência e o fluxo cadastrar obra/exemplar → emprestar → devolver. Também incluem quatro regressões dos fluxos da Sprint 1. A configuração `.github/workflows/backend-testes.yml` usa Java 21 + PostgreSQL 15; os resultados locais estão registrados nas evidências da sprint.
+As classes `CirculacaoPostgresTest`, `CatalogoPostgresTest` e `MultasConfiguracaoPostgresTest` contêm casos para SQL, Flyway, autorização/JWT, vínculos, duplicidade, rollback, concorrência e o fluxo cadastrar obra/exemplar → emprestar → devolver. Também incluem quatro regressões dos fluxos da Sprint 1. A configuração `.github/workflows/backend-testes.yml` usa Java 21 + PostgreSQL 15; os resultados locais estão registrados nas evidências da sprint.
 
 ### Coleção Postman da Sprint 2
 
@@ -297,6 +335,11 @@ Importar [sprint-2-h4-h8.postman_collection.json](Docs/Postman/sprint-2-h4-h8.po
 - [Evidências da Sprint 2](Docs/Sprints/Sprint-2/sprint-2-evidencias-teste.md)
 - [Contribuição individual da Sprint 2](Docs/Sprints/Sprint-2/sprint-2-contribuicao-raniery.md)
 - [Retrospectiva individual da Sprint 2](Docs/Sprints/Sprint-2/sprint-2-retrospectiva.md)
+
+- [Relatório do backend H11/H13 — Sprint 3](Docs/Sprints/Sprint-3/sprint-3-relatorio.md)
+- [Evidências H11/H13 — Sprint 3](Docs/Sprints/Sprint-3/sprint-3-evidencias-teste.md)
+- [Contribuição individual — Sprint 3](Docs/Sprints/Sprint-3/sprint-3-contribuicao-raniery.md)
+- [Retrospectiva individual — Sprint 3](Docs/Sprints/Sprint-3/sprint-3-retrospectiva.md)
 
 ## Estrutura principal
 
@@ -318,7 +361,7 @@ O histórico da Sprint 1 está no [relatório correspondente](Docs/Sprints/Sprin
 
 ## Alcance da validação
 
-Os resultados documentados das Sprints 1 e 2 abrangem o backend H1–H8, seus testes automatizados e os cenários HTTP demonstrados. Os testes de circulação com reservas utilizam dados preparados no banco; a integração completa com os endpoints H9/H10, as telas e o ambiente de deploy não é demonstrada por essas evidências. O registro se limita aos cenários efetivamente executados.
+O incremento H11/H13 e seus 35 casos PostgreSQL estão documentados na Sprint 3. Os resultados documentados das Sprints 1 e 2 abrangem o backend H1–H8, seus testes automatizados e os cenários HTTP demonstrados. Os testes de circulação com reservas utilizam dados preparados no banco; a integração completa com os endpoints H9/H10, as telas e o ambiente de deploy não é demonstrada por essas evidências. O registro se limita aos cenários efetivamente executados.
 
 ## Equipe
 
