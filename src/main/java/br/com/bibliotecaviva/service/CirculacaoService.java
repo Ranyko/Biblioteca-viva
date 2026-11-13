@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.bibliotecaviva.dto.DevolucaoResponse;
 import br.com.bibliotecaviva.dto.EmprestimoCreateRequest;
 import br.com.bibliotecaviva.dto.EmprestimoResponse;
+import br.com.bibliotecaviva.dto.RenovacaoResponse;
 import br.com.bibliotecaviva.exception.ConflitoException;
 import br.com.bibliotecaviva.repository.CirculacaoRepository;
 
@@ -48,7 +49,7 @@ public class CirculacaoService {
         }
 
         var emprestimo = repository.criar(leitor.id(), exemplar.id(), atendenteId,
-            agora, agora.toLocalDate().plusDays(regras.prazoDias()));
+            agora, agora.toLocalDate().plusDays(regras.prazoDias()), regras.limiteRenovacoes());
         reserva.ifPresent(r -> repository.atenderReserva(r.id()));
         repository.statusExemplar(exemplar.id(), "emprestado");
         return emprestimo;
@@ -81,6 +82,55 @@ public class CirculacaoService {
 
     @Transactional(readOnly = true)
     public EmprestimoResponse buscar(long id) { return repository.buscar(id); }
+
+    @Transactional
+    public RenovacaoResponse renovar(long emprestimoId, long usuarioId) {
+        long livroId = repository.travarLivroDoEmprestimo(emprestimoId, usuarioId);
+        var emprestimo = repository.travarEmprestimoDoLeitor(emprestimoId, usuarioId);
+        return renovar(emprestimoId, livroId, emprestimo, null);
+    }
+
+    @Transactional
+    public RenovacaoResponse renovarPorAtendente(long emprestimoId, long atendenteId) {
+        long livroId = repository.travarLivroDoEmprestimo(emprestimoId);
+        var emprestimo = repository.travarEmprestimoParaRenovacao(emprestimoId);
+        return renovar(emprestimoId, livroId, emprestimo, atendenteId);
+    }
+
+    private RenovacaoResponse renovar(long emprestimoId, long livroId,
+            CirculacaoRepository.EmprestimoRenovacaoDados emprestimo, Long atendenteRenovacaoId) {
+        if (emprestimo.dataDevolucao() != null) throw new ConflitoException("Empréstimo já devolvido");
+
+        var agora = OffsetDateTime.now(clock);
+        var hoje = agora.toLocalDate();
+        if (hoje.isAfter(emprestimo.dataPrevistaDevolucao()))
+            throw new ConflitoException("Empréstimo vencido não pode ser renovado");
+        if (repository.temReservaAtiva(livroId))
+            throw new ConflitoException("Há reserva ativa para a obra");
+
+        int renovacoesRealizadas = repository.quantidadeRenovacoes(emprestimoId);
+        if (renovacoesRealizadas >= emprestimo.limiteRenovacoesSnapshot())
+            throw new ConflitoException("Limite de renovações do empréstimo atingido");
+
+        var regras = repository.regras();
+        var novaDataPrevista = emprestimo.dataPrevistaDevolucao().plusDays(regras.prazoDias());
+        var renovacao = repository.registrarRenovacao(emprestimoId, emprestimo.leitorId(),
+            renovacoesRealizadas + 1, emprestimo.dataPrevistaDevolucao(), novaDataPrevista,
+            atendenteRenovacaoId, agora);
+        if (!repository.atualizarDataPrevista(emprestimoId, emprestimo.dataPrevistaDevolucao(), novaDataPrevista))
+            throw new ConflitoException("Empréstimo foi alterado durante a renovação");
+        return renovacao;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RenovacaoResponse> historicoRenovacoes(long emprestimoId, long usuarioId) {
+        return repository.historicoRenovacoes(emprestimoId, usuarioId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RenovacaoResponse> historicoRenovacoesAtendente(long emprestimoId) {
+        return repository.historicoRenovacoesAtendente(emprestimoId);
+    }
 
     @Transactional(readOnly = true)
     public List<EmprestimoResponse> listar(boolean ativos, int pagina, int tamanho) {
