@@ -1,0 +1,191 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #dbe2ef !important;
+}
+
+.app-container {
+  min-height: 100vh;
+  background-color: #dbe2ef;
+  display: flex;
+  flex-direction: column;
+}
+
+.acervo-container {
+  padding: 2.5rem 3.5rem;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+/* Card Principal */
+.acervo-card {
+  background-color: #ffffff;
+  padding: 2.5rem 3rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+
+.acervo-search-bar {
+  width: 100%;
+  max-width: 500px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 0.7rem 2.75rem 0.7rem 1.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.search-input-wrapper input:focus {
+  border-color: #2563eb;
+}
+
+.search-icon-svg {
+  position: absolute;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+
+.acervo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 2.5rem;
+  row-gap: 2rem;
+}
+
+
+.livro-item-card {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 1.25rem;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.livro-cover-placeholder {
+  width: 80px;
+  height: 110px;
+  background-color: #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.livro-cover-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-text {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+
+.livro-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.livro-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.livro-autor {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.livro-tipo {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+
+.livro-action-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.livro-qtd {
+  font-size: 0.82rem;
+  color: #111827;
+  text-align: right;
+}
+
+.btn-ver-detalhes {
+  padding: 0.45rem 1rem;
+  border: 1px solid #9ca3af;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-ver-detalhes:hover {
+  background-color: #f3f4f6;
+  border-color: #6b7280;
+}
+
+.no-results-text {
+  grid-column: span 2;
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 2rem 0;
+}
+
+@media (max-width: 900px) {
+  .acervo-grid {
+    grid-template-columns: 1fr;
+  }
+}

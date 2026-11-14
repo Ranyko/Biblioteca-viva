@@ -1,1 +1,4 @@
 correcoes/
+
+# Dependências do Node.js
+node_modules/
