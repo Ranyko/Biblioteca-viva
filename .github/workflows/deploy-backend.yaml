@@ -1,0 +1,65 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-backend-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build backend
+        run: |
+          ./mvnw -B -ntp clean package -DskipTests
+          mkdir -p "$RUNNER_TEMP/backend-artifact"
+          jar_file="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*.jar.original' -print -quit)"
+          if [[ -z "$jar_file" ]]; then
+            echo "O build não gerou um JAR executável." >&2
+            exit 1
+          fi
+          cp "$jar_file" "$RUNNER_TEMP/backend-artifact/app.jar"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-app
+          path: ${{ runner.temp }}/backend-artifact/app.jar
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-app
+          path: backend-artifact
+
+      - name: Deploy backend via SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: bash deploy/backend/backend.sh backend-artifact/app.jar
