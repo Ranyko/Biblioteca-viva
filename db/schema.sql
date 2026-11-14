@@ -174,6 +174,34 @@ CREATE TABLE renovacao_emprestimo (
     CONSTRAINT ux_renovacao_emprestimo_numero UNIQUE (emprestimo_id, numero_renovacao)
 );
 
+CREATE TABLE renovacao_emprestimo (
+    id BIGSERIAL PRIMARY KEY,
+    emprestimo_id BIGINT NOT NULL REFERENCES emprestimo(id),
+    leitor_id BIGINT NOT NULL REFERENCES leitor(id),
+    atendente_renovacao_id BIGINT REFERENCES usuario(id),
+    numero_renovacao SMALLINT NOT NULL CHECK (numero_renovacao > 0),
+    data_prevista_anterior DATE NOT NULL,
+    data_prevista_nova DATE NOT NULL CHECK (data_prevista_nova > data_prevista_anterior),
+    renovada_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ux_renovacao_emprestimo_numero UNIQUE (emprestimo_id, numero_renovacao)
+);
+
+CREATE TABLE avaliacao_livro (
+    id BIGSERIAL PRIMARY KEY,
+    livro_id BIGINT NOT NULL REFERENCES livro(id),
+    leitor_id BIGINT NOT NULL REFERENCES leitor(id),
+    nota SMALLINT NOT NULL CHECK (nota BETWEEN 1 AND 5),
+    resenha TEXT,
+    criada_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizada_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_avaliacao_livro_resenha
+        CHECK (resenha IS NULL OR char_length(btrim(resenha)) BETWEEN 1 AND 1000),
+    CONSTRAINT ux_avaliacao_livro_leitor UNIQUE (livro_id, leitor_id)
+);
+
+CREATE INDEX idx_avaliacao_livro_recente
+    ON avaliacao_livro (livro_id, atualizada_em DESC, id DESC);
+
 CREATE TABLE reserva (
     id BIGSERIAL PRIMARY KEY,
 
