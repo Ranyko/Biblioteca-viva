@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { Avaliacoes } from '../components/Avaliacoes';
 import { getUsuario, textoErro } from '../services/api';
 import { reservasService } from '../services/reservas';
 import './Reserva.css';
@@ -121,6 +122,8 @@ export function Reserva() {
             </div>
           </div>
         </div>
+
+        <Avaliacoes livroId={obra.id} />
       </main>
     </div>
   );
