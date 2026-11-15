@@ -1,4 +1,3 @@
-
 package br.com.bibliotecaviva.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,13 +28,8 @@ class PainelBibliotecaServiceTest {
 
     @Test
     void deveMontarPainelComDadosDoRepositorio() {
-        var ranking = List.of(
-            new ObraMaisEmprestadaResponse(1L, "Livro A", 5L)
-        );
-
-        var categorias = List.of(
-            new EmprestimosPorCategoriaResponse(1L, "Fantasia", 3L)
-        );
+        var ranking = List.of(new ObraMaisEmprestadaResponse(1L, "Livro A", 5L));
+        var categorias = List.of(new EmprestimosPorCategoriaResponse(1L, "Fantasia", 3L));
 
         when(repository.contarEmprestimosAtivos()).thenReturn(4L);
         when(repository.contarEmprestimosAtrasados()).thenReturn(2L);

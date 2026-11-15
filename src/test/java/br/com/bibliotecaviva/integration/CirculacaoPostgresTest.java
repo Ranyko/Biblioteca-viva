@@ -49,9 +49,18 @@ class CirculacaoPostgresTest {
     }
     @TestConfiguration
     static class Relogio {
-        @Bean @Primary Clock relogioTeste() {
-            return Clock.fixed(Instant.parse("2026-10-01T13:00:00Z"), ZoneId.of("America/Sao_Paulo"));
+        @Bean @Primary MutableClock relogioTeste() {
+            return new MutableClock(Instant.parse("2026-10-01T13:00:00Z"));
         }
+    }
+    static class MutableClock extends Clock {
+        private volatile Instant instant;
+        private final ZoneId zone = ZoneId.of("America/Sao_Paulo");
+        MutableClock(Instant instant) { this.instant = instant; }
+        void setInstant(Instant instant) { this.instant = instant; }
+        @Override public ZoneId getZone() { return zone; }
+        @Override public Clock withZone(ZoneId zone) { return Clock.fixed(instant, zone); }
+        @Override public Instant instant() { return instant; }
     }
     @Autowired WebApplicationContext context;
     @Autowired JdbcTemplate jdbc;
@@ -59,11 +68,13 @@ class CirculacaoPostgresTest {
     @Autowired TokenService tokens;
     @Autowired CirculacaoService circulacao;
     @Autowired PlatformTransactionManager transactions;
+    @Autowired MutableClock clock;
     MockMvc mvc;
     String atendente;
     String leitor;
 
     @BeforeEach void configurar() {
+        clock.setInstant(Instant.parse("2026-10-01T13:00:00Z"));
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         atendente = "Bearer " + tokens.gerar(usuarios.findById(4L).orElseThrow());
         leitor = "Bearer " + tokens.gerar(usuarios.findById(2L).orElseThrow());
@@ -150,6 +161,101 @@ class CirculacaoPostgresTest {
         jdbc.update("UPDATE exemplar SET status = 'reservado' WHERE id = 1");
         jdbc.update("INSERT INTO reserva(leitor_id, livro_id, exemplar_id, status, data_limite_retirada) VALUES (2, 1, 1, 'disponivel', '2026-10-01T10:00:00-03:00')");
         assertEquals(409, retirar(2, 1));
+    }
+    @Test void renovaComSnapshotEGuardaHistoricoDasDatas() throws Exception {
+        assertEquals(201, retirar(1, 1));
+        long emprestimoId = jdbc.queryForObject(
+            "SELECT id FROM emprestimo WHERE leitor_id = 1 AND exemplar_id = 1 AND data_devolucao IS NULL",
+            Long.class);
+        assertEquals(2, jdbc.queryForObject(
+            "SELECT limite_renovacoes_snapshot FROM emprestimo WHERE id = ?", Integer.class, emprestimoId));
+
+        jdbc.update("UPDATE configuracao_biblioteca SET limite_renovacoes = 0");
+        mvc.perform(post("/leitor/emprestimos/" + emprestimoId + "/renovacao").header("Authorization", leitor))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.numeroRenovacao").value(1))
+            .andExpect(jsonPath("$.limiteRenovacoesSnapshot").value(2))
+            .andExpect(jsonPath("$.dataPrevistaAnterior").value("2026-10-15"))
+            .andExpect(jsonPath("$.dataPrevistaNova").value("2026-10-29"));
+        mvc.perform(post("/leitor/emprestimos/" + emprestimoId + "/renovacao").header("Authorization", leitor))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.numeroRenovacao").value(2))
+            .andExpect(jsonPath("$.dataPrevistaAnterior").value("2026-10-29"))
+            .andExpect(jsonPath("$.dataPrevistaNova").value("2026-11-12"));
+        mvc.perform(post("/leitor/emprestimos/" + emprestimoId + "/renovacao").header("Authorization", leitor))
+            .andExpect(status().isConflict());
+        mvc.perform(get("/leitor/emprestimos/" + emprestimoId + "/renovacoes").header("Authorization", leitor))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].dataPrevistaAnterior").value("2026-10-15"))
+            .andExpect(jsonPath("$[1].dataPrevistaNova").value("2026-11-12"));
+        assertEquals(LocalDate.parse("2026-11-12"), jdbc.queryForObject(
+            "SELECT data_prevista_devolucao FROM emprestimo WHERE id = ?", LocalDate.class, emprestimoId));
+        assertEquals(2, jdbc.queryForObject(
+            "SELECT count(*) FROM renovacao_emprestimo WHERE emprestimo_id = ?", Integer.class, emprestimoId));
+    }
+    @Test void atendenteRenovaEPermaneceIdentificadoNoHistoricoDaCirculacao() throws Exception {
+        assertEquals(201, retirar(1, 1));
+        long emprestimoId = jdbc.queryForObject(
+            "SELECT id FROM emprestimo WHERE leitor_id = 1 AND exemplar_id = 1 AND data_devolucao IS NULL",
+            Long.class);
+
+        mvc.perform(post("/atendente/emprestimos/" + emprestimoId + "/renovacao").header("Authorization", atendente))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.atendenteRenovacaoId").value(4))
+            .andExpect(jsonPath("$.dataPrevistaAnterior").value("2026-10-15"))
+            .andExpect(jsonPath("$.dataPrevistaNova").value("2026-10-29"));
+        mvc.perform(get("/atendente/emprestimos/" + emprestimoId + "/renovacoes").header("Authorization", atendente))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].atendenteRenovacaoId").value(4));
+
+        mvc.perform(post("/atendente/emprestimos/" + emprestimoId + "/devolucao").header("Authorization", atendente))
+            .andExpect(status().isOk());
+        assertEquals(4L, jdbc.queryForObject(
+            "SELECT atendente_retirada_id FROM emprestimo WHERE id = ?", Long.class, emprestimoId));
+        assertEquals(4L, jdbc.queryForObject(
+            "SELECT atendente_renovacao_id FROM renovacao_emprestimo WHERE emprestimo_id = ?",
+            Long.class, emprestimoId));
+        assertEquals(4L, jdbc.queryForObject(
+            "SELECT atendente_devolucao_id FROM emprestimo WHERE id = ?", Long.class, emprestimoId));
+    }
+    @Test void leitorNaoPodeRenovarPelaRotaDeAtendente() throws Exception {
+        mvc.perform(post("/atendente/emprestimos/1/renovacao").header("Authorization", leitor))
+            .andExpect(status().isForbidden());
+    }
+    @Test void naoRenovaQuandoHaReservaAtivaOuEmprestimoVencido() throws Exception {
+        assertEquals(201, retirar(1, 1));
+        long emprestimoId = jdbc.queryForObject(
+            "SELECT id FROM emprestimo WHERE leitor_id = 1 AND exemplar_id = 1 AND data_devolucao IS NULL",
+            Long.class);
+        jdbc.update("INSERT INTO reserva(leitor_id, livro_id, status) VALUES (2, 1, 'ativa')");
+        mvc.perform(post("/leitor/emprestimos/" + emprestimoId + "/renovacao").header("Authorization", leitor))
+            .andExpect(status().isConflict());
+        mvc.perform(post("/leitor/emprestimos/1/renovacao").header("Authorization", leitor))
+            .andExpect(status().isConflict());
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM renovacao_emprestimo", Integer.class));
+    }
+    @Test void leitorNaoPodeConsultarHistoricoDeOutroLeitor() throws Exception {
+        mvc.perform(get("/leitor/emprestimos/1/renovacoes").header("Authorization", "Bearer "
+            + tokens.gerar(usuarios.findById(3L).orElseThrow())))
+            .andExpect(status().isNotFound());
+    }
+    @Test void multaUsaDataPrevistaRenovadaEHistoricoPreservaPrazoAnterior() throws Exception {
+        assertEquals(201, retirar(1, 1));
+        long emprestimoId = jdbc.queryForObject(
+            "SELECT id FROM emprestimo WHERE leitor_id = 1 AND exemplar_id = 1 AND data_devolucao IS NULL",
+            Long.class);
+        mvc.perform(post("/leitor/emprestimos/" + emprestimoId + "/renovacao").header("Authorization", leitor))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.dataPrevistaAnterior").value("2026-10-15"))
+            .andExpect(jsonPath("$.dataPrevistaNova").value("2026-10-29"));
+
+        clock.setInstant(Instant.parse("2026-11-03T13:00:00Z"));
+        mvc.perform(post("/atendente/emprestimos/" + emprestimoId + "/devolucao").header("Authorization", atendente))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.diasAtraso").value(5))
+            .andExpect(jsonPath("$.valorMulta").value(12.5));
+        assertEquals(LocalDate.parse("2026-10-15"), jdbc.queryForObject(
+            "SELECT data_prevista_anterior FROM renovacao_emprestimo WHERE emprestimo_id = ?",
+            LocalDate.class, emprestimoId));
+        assertEquals(LocalDate.parse("2026-10-29"), jdbc.queryForObject(
+            "SELECT data_prevista_devolucao FROM emprestimo WHERE id = ?", LocalDate.class, emprestimoId));
     }
     @Test void naoFuraFila() throws Exception {
         jdbc.update("INSERT INTO reserva(leitor_id, livro_id) VALUES (2, 1)");

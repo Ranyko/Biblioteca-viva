@@ -1,17 +1,17 @@
-
 package br.com.bibliotecaviva.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import org.mockito.ArgumentMatchers;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -30,9 +30,7 @@ class PainelBibliotecaRepositoryTest {
 
     @Test
     void deveContarEmprestimosAtivos() {
-        when(jdbcTemplate.queryForObject(
-                contains("data_devolucao IS NULL"),
-                eq(Long.class)))
+        when(jdbcTemplate.queryForObject(contains("data_devolucao IS NULL"), eq(Long.class)))
                 .thenReturn(3L);
 
         assertThat(repository.contarEmprestimosAtivos()).isEqualTo(3L);
@@ -41,8 +39,7 @@ class PainelBibliotecaRepositoryTest {
     @Test
     void deveContarEmprestimosAtrasados() {
         when(jdbcTemplate.queryForObject(
-                contains("data_prevista_devolucao < CURRENT_DATE"),
-                eq(Long.class)))
+                contains("data_prevista_devolucao < CURRENT_DATE"), eq(Long.class)))
                 .thenReturn(2L);
 
         assertThat(repository.contarEmprestimosAtrasados()).isEqualTo(2L);

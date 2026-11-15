@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import br.com.bibliotecaviva.dto.*;
 import br.com.bibliotecaviva.exception.ConflitoException;
+import br.com.bibliotecaviva.model.Aviso.ReferenciaTipo;
+import br.com.bibliotecaviva.model.Aviso.TipoAviso;
 import br.com.bibliotecaviva.repository.CirculacaoRepository;
 import br.com.bibliotecaviva.repository.CirculacaoRepository.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,28 +17,32 @@ import static org.mockito.Mockito.*;
 
 class CirculacaoServiceTest {
     private final CirculacaoRepository repository = mock(CirculacaoRepository.class);
+    private final AvisoService avisoService = mock(AvisoService.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-01T02:00:00Z"), ZoneId.of("America/Sao_Paulo"));
     private final OffsetDateTime agora = OffsetDateTime.now(clock);
-    private final CirculacaoService service = new CirculacaoService(repository, clock);
+    private final CirculacaoService service = new CirculacaoService(repository, avisoService, clock);
     private final EmprestimoCreateRequest request = new EmprestimoCreateRequest(1L, 2L);
 
     @BeforeEach void preparar() {
         when(repository.travarExemplar(2)).thenReturn(new ExemplarDados(2, 1, true, "disponivel"));
         when(repository.travarLeitor(1)).thenReturn(new LeitorDados(1, true, "leitor"));
-        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"), new BigDecimal("25.00"), 2));
+        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"),
+            new BigDecimal("25.00"), 2, 2));
         when(repository.reservaDoExemplar(2)).thenReturn(Optional.empty());
         when(repository.primeiraReservaElegivel(1, 3)).thenReturn(Optional.empty());
+        when(repository.usuarioIdDoLeitor(1)).thenReturn(50L);
+        when(repository.usuarioIdDaReserva(7)).thenReturn(60L);
     }
 
     @Test void calculaPrazoNoFusoDaBiblioteca() {
         service.emprestar(request, 4);
-        verify(repository).criar(1, 2, 4, agora, LocalDate.of(2026, 10, 14)); // Ainda é 30/09 em São Paulo.
+        verify(repository).criar(1, 2, 4, agora, LocalDate.of(2026, 10, 14), 2); // Ainda é 30/09 em São Paulo.
         verify(repository).statusExemplar(2, "emprestado");
     }
     @Test void rejeitaLeitorInativo() {
         when(repository.travarLeitor(1)).thenReturn(new LeitorDados(1, false, "leitor"));
         assertThrows(ConflitoException.class, () -> service.emprestar(request, 4));
-        verify(repository, never()).criar(anyLong(), anyLong(), anyLong(), any(), any());
+        verify(repository, never()).criar(anyLong(), anyLong(), anyLong(), any(), any(), anyInt());
     }
     @Test void rejeitaPerfilAlterado() {
         when(repository.travarLeitor(1)).thenReturn(new LeitorDados(1, true, "administrador"));
@@ -110,13 +116,13 @@ class CirculacaoServiceTest {
     }
     @Test void tetoZeroNaoCriaMulta() {
         emprestimo(agora.toLocalDate().minusDays(5), null);
-        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"), BigDecimal.ZERO, 2));
+        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"), BigDecimal.ZERO, 2, 2));
         assertEquals(new BigDecimal("0.00"), service.devolver(10, 4).valorMulta());
         verify(repository, never()).gerarMulta(anyLong(), anyInt(), any(), any());
     }
     @Test void diariaZeroNaoCriaMulta() {
         emprestimo(agora.toLocalDate().minusDays(5), null);
-        when(repository.regras()).thenReturn(new Regras(14, 3, BigDecimal.ZERO, new BigDecimal("25.00"), 2));
+        when(repository.regras()).thenReturn(new Regras(14, 3, BigDecimal.ZERO, new BigDecimal("25.00"), 2, 2));
         service.devolver(10, 4);
         verify(repository, never()).gerarMulta(anyLong(), anyInt(), any(), any());
     }
@@ -139,5 +145,125 @@ class CirculacaoServiceTest {
         when(repository.primeiraReservaElegivel(1, 3)).thenReturn(Optional.of(7L));
         assertEquals("disponivel", service.devolver(10, 4).statusExemplar());
         verify(repository, never()).disponibilizarReserva(anyLong(), anyLong(), any(), any());
+    }
+
+    private void emprestimoRenovacao(LocalDate prevista, OffsetDateTime devolucao, int limite, int renovacoes) {
+        when(repository.travarLivroDoEmprestimo(10, 2)).thenReturn(1L);
+        when(repository.travarEmprestimoDoLeitor(10, 2))
+            .thenReturn(new EmprestimoRenovacaoDados(10, 1, 1, prevista, devolucao, limite));
+        when(repository.quantidadeRenovacoes(10)).thenReturn(renovacoes);
+        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"),
+            new BigDecimal("25.00"), 2, 2));
+        when(repository.registrarRenovacao(
+                eq(10L), eq(1L), anyInt(), any(), any(), any(), eq(agora)))
+            .thenAnswer(invocation -> new RenovacaoResponse(1L, 10L, invocation.getArgument(2),
+                2, invocation.getArgument(3), invocation.getArgument(4),
+                invocation.getArgument(5), agora));
+        when(repository.atualizarDataPrevista(eq(10L), any(), any())).thenReturn(true);
+    }
+
+    @Test void renovaEmDiaEstendendoAPrazoERegistrandoAuditoria() {
+        emprestimoRenovacao(agora.toLocalDate(), null, 2, 0);
+
+        var result = service.renovar(10, 2);
+
+        assertEquals(1, result.numeroRenovacao());
+        assertEquals(2, result.limiteRenovacoesSnapshot());
+        assertEquals(agora.toLocalDate(), result.dataPrevistaAnterior());
+        assertEquals(agora.toLocalDate().plusDays(14), result.dataPrevistaNova());
+        assertNull(result.atendenteRenovacaoId());
+        verify(repository).atualizarDataPrevista(10, agora.toLocalDate(), agora.toLocalDate().plusDays(14));
+    }
+
+    @Test void renovacaoFeitaPorAtendenteRegistraSeuId() {
+        when(repository.travarLivroDoEmprestimo(10)).thenReturn(1L);
+        when(repository.travarEmprestimoParaRenovacao(10))
+            .thenReturn(new EmprestimoRenovacaoDados(10, 1, 1, agora.toLocalDate(), null, 2));
+        when(repository.quantidadeRenovacoes(10)).thenReturn(0);
+        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"),
+            new BigDecimal("25.00"), 2, 2));
+        when(repository.registrarRenovacao(
+                eq(10L), eq(1L), eq(1), eq(agora.toLocalDate()),
+                eq(agora.toLocalDate().plusDays(14)), eq(4L), eq(agora)))
+            .thenReturn(new RenovacaoResponse(1L, 10L, 1, 2, agora.toLocalDate(),
+                agora.toLocalDate().plusDays(14), 4L, agora));
+        when(repository.atualizarDataPrevista(10, agora.toLocalDate(), agora.toLocalDate().plusDays(14)))
+            .thenReturn(true);
+
+        var result = service.renovarPorAtendente(10, 4);
+
+        assertEquals(4L, result.atendenteRenovacaoId());
+        verify(repository).registrarRenovacao(
+            10, 1, 1, agora.toLocalDate(), agora.toLocalDate().plusDays(14), 4L, agora);
+    }
+
+    @Test void naoPermiteRenovarEmprestimoVencido() {
+        emprestimoRenovacao(agora.toLocalDate().minusDays(1), null, 2, 0);
+
+        assertThrows(ConflitoException.class, () -> service.renovar(10, 2));
+
+        verify(repository, never()).registrarRenovacao(
+            anyLong(), anyLong(), anyInt(), any(), any(), any(), any());
+    }
+
+    @Test void naoPermiteRenovarEmprestimoDevolvido() {
+        emprestimoRenovacao(agora.toLocalDate(), agora, 2, 0);
+
+        assertThrows(ConflitoException.class, () -> service.renovar(10, 2));
+
+        verify(repository, never()).registrarRenovacao(
+            anyLong(), anyLong(), anyInt(), any(), any(), any(), any());
+    }
+
+    @Test void naoPermiteRenovarQuandoHaReservaAtiva() {
+        emprestimoRenovacao(agora.toLocalDate(), null, 2, 0);
+        when(repository.temReservaAtiva(1)).thenReturn(true);
+
+        assertThrows(ConflitoException.class, () -> service.renovar(10, 2));
+
+        verify(repository, never()).registrarRenovacao(
+            anyLong(), anyLong(), anyInt(), any(), any(), any(), any());
+    }
+
+    @Test void respeitaLimiteSnapshotMesmoSeConfiguracaoMudar() {
+        emprestimoRenovacao(agora.toLocalDate(), null, 1, 1);
+        when(repository.regras()).thenReturn(new Regras(14, 3, new BigDecimal("2.50"),
+            new BigDecimal("25.00"), 2, 0));
+
+        assertThrows(ConflitoException.class, () -> service.renovar(10, 2));
+
+        verify(repository, never()).registrarRenovacao(
+            anyLong(), anyLong(), anyInt(), any(), any(), any(), any());
+    }
+
+    @Test void devolucaoComMultaEmiteAvisoMultaGerada() {
+        emprestimo(agora.toLocalDate().minusDays(5), null);
+        when(repository.gerarMulta(eq(10L), eq(5), any(), eq(agora))).thenReturn(99L);
+        service.devolver(10, 4);
+        verify(avisoService).criar(eq(50L), eq(TipoAviso.MULTA_GERADA), anyString(), anyString(),
+            eq(ReferenciaTipo.multa), eq(99L), isNull());
+    }
+
+    @Test void devolucaoComFilaEmiteAvisoReservaDisponivel() {
+        emprestimo(agora.toLocalDate(), null);
+        when(repository.primeiraReservaElegivel(1, 3)).thenReturn(Optional.of(7L));
+        service.devolver(10, 4);
+        verify(avisoService).criar(eq(60L), eq(TipoAviso.RESERVA_DISPONIVEL), anyString(), anyString(),
+            eq(ReferenciaTipo.reserva), eq(7L), isNull());
+    }
+
+    @Test void multaZeroNaoEmiteAviso() {
+        emprestimo(agora.toLocalDate(), null); // devolução no prazo → valor 0
+        service.devolver(10, 4);
+        verify(avisoService, never()).criar(any(), eq(TipoAviso.MULTA_GERADA), anyString(), anyString(),
+            any(), any(), any());
+    }
+
+    @Test void obraInativaNaoEmiteAvisoDeReserva() {
+        emprestimo(agora.toLocalDate(), null);
+        when(repository.travarExemplar(2)).thenReturn(new ExemplarDados(2, 1, false, "emprestado"));
+        service.devolver(10, 4);
+        verify(avisoService, never()).criar(any(), eq(TipoAviso.RESERVA_DISPONIVEL), anyString(), anyString(),
+            any(), any(), any());
     }
 }
