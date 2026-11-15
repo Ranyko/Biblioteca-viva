@@ -28,6 +28,8 @@ import br.com.bibliotecaviva.model.Livro;
 import br.com.bibliotecaviva.model.StatusReserva;
 import br.com.bibliotecaviva.model.Usuario;
 import br.com.bibliotecaviva.model.Reserva;
+import br.com.bibliotecaviva.model.Exemplar;
+import br.com.bibliotecaviva.model.StatusExemplar;
 import br.com.bibliotecaviva.repository.ExemplarRepository;
 import br.com.bibliotecaviva.repository.ReservaRepository;
 
@@ -267,6 +269,50 @@ class ReservaServiceTest {
                 assertEquals(
                                 "cancelada",
                                 resposta.status());
+        }
+
+        @Test
+        void cancelaReservaELiberaExemplarReservado() {
+                Reserva reserva = new Reserva();
+                reserva.setStatus(StatusReserva.ATIVA);
+
+                Exemplar exemplar = new Exemplar();
+                exemplar.setStatus(StatusExemplar.RESERVADO);
+                reserva.setExemplar(exemplar);
+
+                when(reservaRepository.findById(1L))
+                                .thenReturn(java.util.Optional.of(reserva));
+
+                ReservaCancelamentoResponse resposta = service.cancelar(1L);
+
+                verify(reservaRepository).save(reserva);
+
+                assertEquals(StatusReserva.CANCELADA, reserva.getStatus());
+                assertEquals(StatusExemplar.DISPONIVEL, exemplar.getStatus());
+                assertEquals(null, reserva.getExemplar());
+                assertEquals("cancelada", resposta.status());
+        }
+
+        @Test
+        void cancelaReservaSemAlterarExemplarEmprestado() {
+                Reserva reserva = new Reserva();
+                reserva.setStatus(StatusReserva.ATIVA);
+
+                Exemplar exemplar = new Exemplar();
+                exemplar.setStatus(StatusExemplar.EMPRESTADO);
+                reserva.setExemplar(exemplar);
+
+                when(reservaRepository.findById(1L))
+                                .thenReturn(java.util.Optional.of(reserva));
+
+                ReservaCancelamentoResponse resposta = service.cancelar(1L);
+
+                verify(reservaRepository).save(reserva);
+
+                assertEquals(StatusReserva.CANCELADA, reserva.getStatus());
+                assertEquals(StatusExemplar.EMPRESTADO, exemplar.getStatus());
+                assertEquals(exemplar, reserva.getExemplar());
+                assertEquals("cancelada", resposta.status());
         }
 
         @Test

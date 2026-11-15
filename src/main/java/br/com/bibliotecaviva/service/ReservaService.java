@@ -15,6 +15,7 @@ import br.com.bibliotecaviva.dto.ReservaCancelamentoResponse;
 import br.com.bibliotecaviva.model.Leitor;
 import br.com.bibliotecaviva.model.Livro;
 import br.com.bibliotecaviva.model.Reserva;
+import br.com.bibliotecaviva.model.Exemplar;
 import br.com.bibliotecaviva.model.StatusExemplar;
 import br.com.bibliotecaviva.model.StatusReserva;
 import br.com.bibliotecaviva.repository.ExemplarRepository;
@@ -42,15 +43,18 @@ public class ReservaService {
 
         @Transactional
         public ReservaResponse criar(ReservaCreateRequest request) {
-
                 Leitor leitor = leitorService.buscarEntidade(request.leitorId());
+                return criarReserva(leitor, request.livroId());
+        }
+
+        private ReservaResponse criarReserva(Leitor leitor, Long livroId) {
 
                 if (!leitor.getUsuario().isAtivo()) {
                         throw new ConflitoException(
                                         "Leitor inativo não pode realizar reservas");
                 }
 
-                Livro livro = livroService.buscarEntidade(request.livroId());
+                Livro livro = livroService.buscarEntidade(livroId);
 
                 long exemplaresDisponiveis = exemplarRepository.countByLivroIdAndStatus(
                                 livro.getId(),
@@ -64,8 +68,7 @@ public class ReservaService {
                 boolean reservaDuplicada = reservaRepository.existsByLeitorIdAndLivroIdAndStatusIn(
                                 leitor.getId(),
                                 livro.getId(),
-                                List.of(StatusReserva.ATIVA,
-                                                StatusReserva.DISPONIVEL));
+                                List.of(StatusReserva.ATIVA, StatusReserva.DISPONIVEL));
 
                 if (reservaDuplicada) {
                         throw new ConflitoException(
@@ -87,9 +90,7 @@ public class ReservaService {
                                                 StatusReserva.ATIVA)
                                 .indexOf(salva) + 1;
 
-                return ReservaResponse.from(
-                                salva,
-                                posicaoFila);
+                return ReservaResponse.from(salva, posicaoFila);
         }
 
         @Transactional(readOnly = true)
@@ -124,6 +125,15 @@ public class ReservaService {
                                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                                                 "Reserva não encontrada"));
 
+                Exemplar exemplar = reserva.getExemplar();
+
+                if (exemplar != null
+                                && exemplar.getStatus() == StatusExemplar.RESERVADO) {
+
+                        exemplar.setStatus(StatusExemplar.DISPONIVEL);
+                        reserva.setExemplar(null);
+                }
+
                 reserva.setStatus(StatusReserva.CANCELADA);
 
                 reservaRepository.save(reserva);
@@ -132,4 +142,10 @@ public class ReservaService {
                                 reserva.getId(),
                                 reserva.getStatus().valor());
         }
+
+        @Transactional
+        public ReservaResponse criarParaLeitor(Leitor leitor, Long livroId) {
+                return criarReserva(leitor, livroId);
+        }
+
 }

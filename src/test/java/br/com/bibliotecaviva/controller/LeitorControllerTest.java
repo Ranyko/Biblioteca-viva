@@ -7,6 +7,11 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +33,8 @@ import br.com.bibliotecaviva.service.SugestaoLivroService;
 import br.com.bibliotecaviva.service.TokenService;
 import br.com.bibliotecaviva.dto.PainelLeitorResponse;
 import br.com.bibliotecaviva.service.PainelLeitorService;
+import br.com.bibliotecaviva.service.ReservaService;
+import br.com.bibliotecaviva.dto.ReservaResponse;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -50,6 +57,9 @@ class LeitorControllerTest {
 
         @MockitoBean
         private PainelLeitorService painelLeitorService;
+
+        @MockitoBean
+        private ReservaService reservaService;
 
         private Usuario leitorUsuario;
         private Leitor leitor;
@@ -185,4 +195,103 @@ class LeitorControllerTest {
 
                 verifyNoInteractions(leitorRepository, painelLeitorService);
         }
+
+        @Test
+        void devePermitirQueLeitorAutenticadoCrieReserva() throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(leitorRepository.findByUsuarioId(10L))
+                                .thenReturn(Optional.of(leitor));
+
+                ReservaResponse resposta = new ReservaResponse(
+                                1L, 20L, "Leitor Teste", 5L, "Livro Teste",
+                                "ativa", java.time.OffsetDateTime.now(), 1);
+
+                when(reservaService.criarParaLeitor(leitor, 5L))
+                                .thenReturn(resposta);
+
+                mockMvc.perform(post("/leitor/reservas")
+                                .header("Authorization", "Bearer token-leitor")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.id").value(1))
+                                .andExpect(jsonPath("$.leitorId").value(20))
+                                .andExpect(jsonPath("$.livroId").value(5))
+                                .andExpect(jsonPath("$.posicaoFila").value(1));
+
+                verify(reservaService).criarParaLeitor(leitor, 5L);
+        }
+
+        @Test
+        void deveRetornar404QuandoLeitorNaoPossuiCadastroAoReservar()
+                        throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(leitorRepository.findByUsuarioId(10L))
+                                .thenReturn(Optional.empty());
+
+                mockMvc.perform(post("/leitor/reservas")
+                                .header("Authorization", "Bearer token-leitor")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isNotFound());
+
+                verifyNoInteractions(reservaService);
+        }
+
+        @Test
+        void naoDevePermitirQueAtendenteCrieReservaPelaRotaDoLeitor()
+                        throws Exception {
+                atendenteUsuario = mock(Usuario.class);
+
+                when(atendenteUsuario.getId()).thenReturn(30L);
+                when(atendenteUsuario.getPerfil()).thenReturn(PerfilUsuario.ATENDENTE);
+                when(atendenteUsuario.isAtivo()).thenReturn(true);
+
+                when(tokenService.validarEObterId("token-atendente"))
+                                .thenReturn(Optional.of(30L));
+                when(usuarioRepository.findById(30L))
+                                .thenReturn(Optional.of(atendenteUsuario));
+
+                mockMvc.perform(post("/leitor/reservas")
+                                .header("Authorization", "Bearer token-atendente")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isForbidden());
+
+                verifyNoInteractions(leitorRepository, reservaService);
+        }
+
+        @Test
+        void deveRetornar401QuandoNaoAutenticadoAoCriarReserva()
+                        throws Exception {
+                mockMvc.perform(post("/leitor/reservas")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(leitorRepository, reservaService);
+        }
+
 }
