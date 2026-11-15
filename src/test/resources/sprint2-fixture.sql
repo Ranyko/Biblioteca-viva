@@ -1,7 +1,10 @@
 -- Usado exclusivamente por CirculacaoPostgresTest em banco cujo nome termina em _sprint2_test.
 TRUNCATE multa, reserva, emprestimo, exemplar, livro_autor, livro_categoria,
-    livro, autor, categoria, leitor, usuario, configuracao_biblioteca RESTART IDENTITY CASCADE;
+    livro, autor, categoria, leitor, usuario, configuracao_biblioteca,
+    aviso, aviso_preferencia RESTART IDENTITY CASCADE;
 INSERT INTO configuracao_biblioteca VALUES (1, 14, 3, 2.50, 25.00, 2, CURRENT_TIMESTAMP);
+-- aviso_preferencia não tem FK para usuario, então o TRUNCATE não a re-semeia (V4 já inseriu a linha 1).
+INSERT INTO aviso_preferencia (id) VALUES (1);
 INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES
 ('Administrador', 'admin@biblioteca.com', '$2b$12$Fag2Czl58TQJ.hC9v5qoJuzqNtz9c8x6j8JPIlUbOdXCM4b.UKIyy', 'administrador'),
 ('João', 'joao@biblioteca.com', '$2b$12$Fag2Czl58TQJ.hC9v5qoJuzqNtz9c8x6j8JPIlUbOdXCM4b.UKIyy', 'leitor'),

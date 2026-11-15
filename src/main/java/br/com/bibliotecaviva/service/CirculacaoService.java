@@ -12,15 +12,19 @@ import br.com.bibliotecaviva.dto.DevolucaoResponse;
 import br.com.bibliotecaviva.dto.EmprestimoCreateRequest;
 import br.com.bibliotecaviva.dto.EmprestimoResponse;
 import br.com.bibliotecaviva.exception.ConflitoException;
+import br.com.bibliotecaviva.model.Aviso.ReferenciaTipo;
+import br.com.bibliotecaviva.model.Aviso.TipoAviso;
 import br.com.bibliotecaviva.repository.CirculacaoRepository;
 
 @Service
 public class CirculacaoService {
     private final CirculacaoRepository repository;
+    private final AvisoService avisoService;
     private final Clock clock;
 
-    public CirculacaoService(CirculacaoRepository repository, Clock clock) {
+    public CirculacaoService(CirculacaoRepository repository, AvisoService avisoService, Clock clock) {
         this.repository = repository;
+        this.avisoService = avisoService;
         this.clock = clock;
     }
 
@@ -67,14 +71,28 @@ public class CirculacaoService {
         long atraso = Math.max(0, ChronoUnit.DAYS.between(emprestimo.dataPrevistaDevolucao(), agora.toLocalDate()));
         BigDecimal valor = regras.diaria().multiply(BigDecimal.valueOf(atraso)).min(regras.teto()).setScale(2);
         var devolvido = repository.devolver(emprestimoId, atendenteId, agora);
-        if (valor.signum() > 0) repository.gerarMulta(emprestimoId, Math.toIntExact(atraso), regras, agora);
+        if (valor.signum() > 0) {
+            long multaId = repository.gerarMulta(emprestimoId, Math.toIntExact(atraso), regras, agora);
+            // Gancho síncrono (doc §6): aviso de multa na mesma transação da devolução.
+            avisoService.criar(repository.usuarioIdDoLeitor(emprestimo.leitorId()), TipoAviso.MULTA_GERADA,
+                "Multa gerada", "Foi gerada uma multa de R$ " + valor + " referente ao atraso na devolução.",
+                ReferenciaTipo.multa, multaId, null);
+        }
 
         if (exemplar.livroAtivo()) repository.travarLeitoresDaFila(exemplar.livroId());
         Optional<Long> proxima = exemplar.livroAtivo()
             ? repository.primeiraReservaElegivel(exemplar.livroId(), regras.limite()) : Optional.empty();
         String status = proxima.isPresent() ? "reservado" : "disponivel";
-        proxima.ifPresent(id -> repository.disponibilizarReserva(id, exemplar.id(), agora,
-            agora.plusDays(regras.prazoReservaDias())));
+        proxima.ifPresent(id -> {
+            repository.disponibilizarReserva(id, exemplar.id(), agora,
+                agora.plusDays(regras.prazoReservaDias()));
+            // Gancho síncrono (doc §6): aviso de reserva disponível na mesma transação.
+            avisoService.criar(repository.usuarioIdDaReserva(id), TipoAviso.RESERVA_DISPONIVEL,
+                "Exemplar reservado disponível",
+                "Seu exemplar reservado está disponível para retirada até "
+                    + agora.plusDays(regras.prazoReservaDias()).toLocalDate() + ".",
+                ReferenciaTipo.reserva, id, null);
+        });
         repository.statusExemplar(exemplar.id(), status);
         return new DevolucaoResponse(devolvido, atraso, valor, status, proxima.orElse(null));
     }
