@@ -5,6 +5,8 @@ import adicionarIcon from '../assets/adicionar.svg';
 import { getUsuario, textoErro } from '../services/api';
 import { usuariosService, type Perfil, type Usuario } from '../services/usuarios';
 import './GerenciarUsuarios.css';
+import { Mensagem } from '../components/Mensagem';
+import { useConfirmar } from '../components/useConfirmar';
 
 const ROTULO_PERFIL: Record<Perfil, string> = {
   leitor: 'Leitor',
@@ -13,6 +15,7 @@ const ROTULO_PERFIL: Record<Perfil, string> = {
 };
 
 export function GerenciarUsuarios() {
+  const [confirmar, dialogoConfirmar] = useConfirmar();
   const navigate = useNavigate();
   const logado = getUsuario();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -42,7 +45,7 @@ export function GerenciarUsuarios() {
   // O back não tem DELETE: "remover" inativa o usuário (ele deixa de conseguir entrar).
   const handleToggleAtivo = async (u: Usuario) => {
     const acao = u.ativo ? 'inativar' : 'reativar';
-    if (!confirm(`Deseja realmente ${acao} o usuário "${u.nome}"?`)) return;
+    if (!(await confirmar(`Deseja realmente ${acao} o usuário "${u.nome}"?`, { rotulo: u.ativo ? 'Inativar' : 'Reativar', perigo: u.ativo }))) return;
     try {
       substituir(await usuariosService.definirAtivo(u, !u.ativo));
     } catch (err) {
@@ -53,6 +56,8 @@ export function GerenciarUsuarios() {
   return (
     <div className="app-container">
       <Navbar userProfile={{ nome: logado?.nome ?? 'Usuário' }} />
+
+      {dialogoConfirmar}
 
       <main className="gerenciar-usuarios-container">
         <div className="header-flex">
@@ -67,7 +72,7 @@ export function GerenciarUsuarios() {
           </button>
         </div>
 
-        {erro && <p style={{ color: '#b91c1c', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         <div className="gerenciar-card">
           <div className="table-responsive">

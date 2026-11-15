@@ -5,6 +5,7 @@ import { circulacaoService, type Emprestimo as EmprestimoRegistrado } from '../s
 import { dataBR, dataHoraBR, hojeBR } from '../services/formato';
 import { leitoresService, type Leitor } from '../services/leitores';
 import './Emprestimo.css';
+import { Mensagem } from '../components/Mensagem';
 
 const rotuloLeitor = (l: Leitor) => `${l.nome} (${l.documento})`;
 
@@ -76,12 +77,12 @@ export function Emprestimo() {
         <h1 className="page-title">Registro de Empréstimo</h1>
 
         <div className="emprestimo-card">
-          {erro && <p style={{ color: '#b91c1c', margin: '0 0 1rem' }}>{erro}</p>}
+          {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
           {registrado && (
-            <p style={{ color: '#047857', margin: '0 0 1rem' }}>
+            <Mensagem tipo="sucesso">
               Empréstimo #{registrado.id} registrado. Devolução prevista para{' '}
               {dataBR(registrado.dataPrevistaDevolucao)}.
-            </p>
+            </Mensagem>
           )}
           <form className="emprestimo-form" onSubmit={handleSubmit}>
             

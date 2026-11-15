@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { homePorPerfil } from '../auth/perfis';
+import { Mensagem } from './Mensagem';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -58,7 +59,7 @@ export function LoginForm() {
     <div className="login-card">
       <form onSubmit={handleSubmit}>
         {/* Exibe mensagem de erro caso o login falhe */}
-        {erro && <p className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         <div className="input-group">
           <label htmlFor="email">Email</label>

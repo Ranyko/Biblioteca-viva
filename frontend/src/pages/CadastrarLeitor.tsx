@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { getUsuario, textoErro } from '../services/api';
 import { leitoresService } from '../services/leitores';
 import './CadastrarLivro.css';
+import { Mensagem } from '../components/Mensagem';
 
 export function CadastrarLeitor() {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export function CadastrarLeitor() {
             </div>
 
             <div className="fields-column">
-              {erro && <p style={{ color: '#b91c1c', margin: 0 }}>{erro}</p>}
+              {erro && <Mensagem tipo="erro" style={{ margin: 0 }}>{erro}</Mensagem>}
 
               <div className="form-group">
                 <label htmlFor="nome">Nome</label>

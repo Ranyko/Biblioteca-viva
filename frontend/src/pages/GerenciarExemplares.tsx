@@ -11,6 +11,8 @@ import {
   type StatusExemplar,
 } from '../services/catalogo';
 import './GerenciarExemplares.css';
+import { Mensagem } from '../components/Mensagem';
+import { useConfirmar } from '../components/useConfirmar';
 
 const ESTADOS: EstadoConservacao[] = ['novo', 'bom', 'regular', 'danificado'];
 const ROTULO_STATUS: Record<StatusExemplar, string> = {
@@ -30,6 +32,7 @@ interface Formulario {
 const FORM_VAZIO: Formulario = { id: null, livroId: '', codigoTombo: '', estadoConservacao: 'novo' };
 
 export function GerenciarExemplares() {
+  const [confirmar, dialogoConfirmar] = useConfirmar();
   const [exemplares, setExemplares] = useState<Exemplar[]>([]);
   const [livros, setLivros] = useState<Livro[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -93,9 +96,10 @@ export function GerenciarExemplares() {
     }
   };
 
+  // O backend não tem DELETE: inativa/reativa via PATCH /situacao.
   const handleToggleAtivo = async (item: Exemplar) => {
     const inativar = item.status !== 'inativo';
-    if (!confirm(`Deseja realmente ${inativar ? 'inativar' : 'disponibilizar'} o exemplar ${item.codigoTombo}?`)) return;
+    if (!(await confirmar(`Deseja realmente ${inativar ? 'inativar' : 'disponibilizar'} o exemplar ${item.codigoTombo}?`, { rotulo: inativar ? 'Inativar' : 'Disponibilizar', perigo: inativar }))) return;
     try {
       const atualizado = await exemplaresService.definirAtivo(item.id, !inativar);
       setExemplares((l) => l.map((x) => (x.id === atualizado.id ? atualizado : x)));
@@ -107,6 +111,8 @@ export function GerenciarExemplares() {
   return (
     <div className="app-container">
       <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Usuário' }} />
+
+      {dialogoConfirmar}
 
       <main className="gerenciar-exemplares-container">
         <div className="header-flex">
@@ -121,17 +127,14 @@ export function GerenciarExemplares() {
           </button>
         </div>
 
-        {erro && <p style={{ color: '#b91c1c', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         {form && (
-          <form
-            onSubmit={handleSalvar}
-            className="gerenciar-card"
-            style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}
-          >
-            <label>
-              Livro<br />
+          <form onSubmit={handleSalvar} className="gerenciar-card exemplar-form">
+            <div className="exemplar-campo exemplar-campo-livro">
+              <label htmlFor="ex-livro">Livro</label>
               <select
+                id="ex-livro"
                 value={form.livroId}
                 disabled={form.id !== null}
                 required
@@ -142,28 +145,35 @@ export function GerenciarExemplares() {
                   <option key={l.id} value={l.id}>{l.titulo}</option>
                 ))}
               </select>
-            </label>
-            <label>
-              Código de tombo<br />
+            </div>
+            <div className="exemplar-campo">
+              <label htmlFor="ex-tombo">Código de tombo</label>
               <input
+                id="ex-tombo"
                 type="text"
                 value={form.codigoTombo}
                 maxLength={50}
                 required
+                placeholder="Ex.: TOMBO-0004"
                 onChange={(e) => setForm({ ...form, codigoTombo: e.target.value })}
               />
-            </label>
-            <label>
-              Estado de conservação<br />
+            </div>
+            <div className="exemplar-campo">
+              <label htmlFor="ex-estado">Estado de conservação</label>
               <select
+                id="ex-estado"
                 value={form.estadoConservacao}
                 onChange={(e) => setForm({ ...form, estadoConservacao: e.target.value as EstadoConservacao })}
               >
                 {ESTADOS.map((s) => <option key={s} value={s}>{cap(s)}</option>)}
               </select>
-            </label>
-            <button type="submit" disabled={salvando}>{salvando ? 'Salvando...' : form.id === null ? 'Cadastrar' : 'Salvar'}</button>
-            <button type="button" onClick={() => setForm(null)}>Cancelar</button>
+            </div>
+            <div className="exemplar-acoes">
+              <button type="button" className="exemplar-btn secundario" onClick={() => setForm(null)}>Cancelar</button>
+              <button type="submit" className="exemplar-btn primario" disabled={salvando}>
+                {salvando ? 'Salvando...' : form.id === null ? 'Cadastrar' : 'Salvar'}
+              </button>
+            </div>
           </form>
         )}
 

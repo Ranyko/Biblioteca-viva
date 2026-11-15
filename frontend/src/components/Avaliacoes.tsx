@@ -3,6 +3,8 @@ import { textoErro } from '../services/api';
 import { avaliacoesService, RESENHA_MAX, type Avaliacao, type AvaliacoesLivro } from '../services/avaliacoes';
 import { dataBR } from '../services/formato';
 import './Avaliacoes.css';
+import { Mensagem } from './Mensagem';
+import { useConfirmar } from './useConfirmar';
 
 const TAMANHO = 5;
 
@@ -18,6 +20,7 @@ function Estrelas({ nota }: { nota: number }) {
 
 /** Avaliações de uma obra: média, resenhas recentes e o formulário do próprio leitor. */
 export function Avaliacoes({ livroId }: { livroId: number }) {
+  const [confirmar, dialogoConfirmar] = useConfirmar();
   const [dados, setDados] = useState<AvaliacoesLivro | null>(null);
   const [pagina, setPagina] = useState(0);
   const [propria, setPropria] = useState<Avaliacao | null>(null);
@@ -87,7 +90,7 @@ export function Avaliacoes({ livroId }: { livroId: number }) {
   };
 
   const excluir = async () => {
-    if (!window.confirm('Excluir sua avaliação desta obra?')) return;
+    if (!(await confirmar('Excluir sua avaliação desta obra?', { rotulo: 'Excluir', perigo: true }))) return;
     setErro('');
     setOk('');
     setSalvando(true);
@@ -107,9 +110,10 @@ export function Avaliacoes({ livroId }: { livroId: number }) {
 
   return (
     <section className="aval-card">
+      {dialogoConfirmar}
       <h2>Avaliações</h2>
 
-      {erroLista && <p className="aval-erro">{erroLista}</p>}
+      {erroLista && <Mensagem tipo="erro">{erroLista}</Mensagem>}
 
       {dados && (
         <>
@@ -153,8 +157,8 @@ export function Avaliacoes({ livroId }: { livroId: number }) {
 
       <div className="aval-form">
         <h3>{propria ? 'Sua avaliação' : 'Avaliar esta obra'}</h3>
-        {erro && <p className="aval-erro">{erro}</p>}
-        {ok && <p className="aval-ok">{ok}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
+        {ok && <Mensagem tipo="sucesso">{ok}</Mensagem>}
 
         <div className="aval-picker" role="radiogroup" aria-label="Nota de 1 a 5">
           {[1, 2, 3, 4, 5].map((n) => (

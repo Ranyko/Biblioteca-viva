@@ -22,6 +22,4 @@
 .aval-form textarea { width: 100%; min-height: 90px; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; resize: vertical; box-sizing: border-box; }
 .aval-contador { text-align: right; font-size: 0.8rem; color: #6b7280; margin: 0.25rem 0 0.75rem; }
 .aval-acoes { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.aval-erro { color: #b91c1c; margin: 0 0 0.75rem; }
-.aval-ok { color: #047857; margin: 0 0 0.75rem; }
 @media (max-width: 700px) { .aval-card { padding: 1.25rem; } }

@@ -4,6 +4,7 @@ import { getUsuario, textoErro } from '../services/api';
 import { avisosService, COR_TIPO, ROTULO_TIPO, type Aviso } from '../services/avisos';
 import { dataHoraMinBR } from '../services/formato';
 import './Avisos.css';
+import { Mensagem } from '../components/Mensagem';
 
 const TAMANHO = 10;
 type Filtro = 'todos' | 'nao-lidos' | 'lidos';
@@ -86,7 +87,7 @@ export function Avisos() {
             </select>
           </div>
 
-          {erro && <p className="avisos-erro">{erro}</p>}
+          {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
           {carregando ? (
             <p className="avisos-vazio">Carregando...</p>

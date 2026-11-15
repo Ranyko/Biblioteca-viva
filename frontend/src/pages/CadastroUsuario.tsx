@@ -5,6 +5,7 @@ import { getUsuario, textoErro } from '../services/api';
 import { usuariosService, type Perfil } from '../services/usuarios';
 import './CadastrarLivro.css';
 import './CadastroUsuario.css';
+import { Mensagem } from '../components/Mensagem';
 
 export function CadastroUsuario() {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ export function CadastroUsuario() {
             </div>
 
             <div className="fields-column">
-              {erro && <p style={{ color: '#b91c1c', margin: 0 }}>{erro}</p>}
+              {erro && <Mensagem tipo="erro" style={{ margin: 0 }}>{erro}</Mensagem>}
 
               <div className="form-group">
                 <label htmlFor="nome">Nome</label>

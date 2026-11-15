@@ -4,6 +4,7 @@ import { getUsuario, textoErro } from '../services/api';
 import { situacaoService, type SituacaoLeitor } from '../services/situacao';
 import { dataBR, dataHoraBR, diasDeAtraso, moeda } from '../services/formato';
 import './Avisos.css';
+import { Mensagem } from '../components/Mensagem';
 
 const ROTULO_RESERVA: Record<string, string> = {
   ativa: 'Na fila',
@@ -49,7 +50,7 @@ export function MinhaSituacao() {
           <h1 className="avisos-titulo">Minha situação</h1>
         </div>
 
-        {erro && <p className="avisos-erro">{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
         {!dados && !erro && <p className="avisos-vazio">Carregando...</p>}
 
         {dados && (
@@ -125,7 +126,7 @@ export function MinhaSituacao() {
               ) : (
                 <>
                   {pendente > 0 && (
-                    <p className="avisos-erro">Total pendente: <strong>{moeda(pendente)}</strong></p>
+                    <Mensagem tipo="aviso">Total pendente: <strong>{moeda(pendente)}</strong></Mensagem>
                   )}
                   <table className="avisos-tabela">
                     <thead>
