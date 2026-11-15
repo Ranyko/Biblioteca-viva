@@ -2,7 +2,6 @@ package br.com.bibliotecaviva.controller;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,8 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.bibliotecaviva.dto.UsuarioCreateRequest;
+import br.com.bibliotecaviva.dto.PainelBibliotecaResponse;
 import br.com.bibliotecaviva.dto.UsuarioResponse;
 import br.com.bibliotecaviva.dto.UsuarioUpdateRequest;
+import br.com.bibliotecaviva.service.PainelBibliotecaService;
 import br.com.bibliotecaviva.service.UsuarioService;
 import jakarta.validation.Valid;
 
@@ -24,14 +25,16 @@ import jakarta.validation.Valid;
 public class AdminController {
 
     private final UsuarioService usuarioService;
+    private final PainelBibliotecaService painelBibliotecaService;
 
-    public AdminController(UsuarioService usuarioService) {
+    public AdminController(UsuarioService usuarioService, PainelBibliotecaService painelBibliotecaService) {
         this.usuarioService = usuarioService;
+        this.painelBibliotecaService = painelBibliotecaService;
     }
 
     @GetMapping("/painel")
-    public Map<String, String> painel() {
-        return Map.of("mensagem", "Acesso de administrador autorizado");
+    public PainelBibliotecaResponse painel() {
+        return painelBibliotecaService.consultar();
     }
 
     @GetMapping("/usuarios")
