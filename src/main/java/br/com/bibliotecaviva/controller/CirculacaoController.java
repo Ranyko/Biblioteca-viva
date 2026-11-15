@@ -28,6 +28,16 @@ public class CirculacaoController {
         return service.devolver(id, usuario.getId());
     }
 
+    @PostMapping("/{id}/renovacao")
+    public RenovacaoResponse renovar(@PathVariable long id, @AuthenticationPrincipal Usuario usuario) {
+        return service.renovarPorAtendente(id, usuario.getId());
+    }
+
+    @GetMapping("/{id}/renovacoes")
+    public List<RenovacaoResponse> historicoRenovacoes(@PathVariable long id) {
+        return service.historicoRenovacoesAtendente(id);
+    }
+
     @GetMapping("/{id}")
     public EmprestimoResponse buscar(@PathVariable long id) { return service.buscar(id); }
 

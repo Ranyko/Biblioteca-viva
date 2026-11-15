@@ -56,9 +56,14 @@ CREATE TABLE configuracao_biblioteca (
         CHECK (limite_emprestimos > 0),
     valor_multa_dia NUMERIC(10,2) NOT NULL
         CHECK (valor_multa_dia >= 0),
+    valor_maximo_multa NUMERIC(10,2) NOT NULL
+        CHECK (valor_maximo_multa >= 0),
     prazo_retirada_reserva_dias SMALLINT NOT NULL
         CHECK (prazo_retirada_reserva_dias > 0),
+
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    limite_renovacoes SMALLINT NOT NULL DEFAULT 2
+        CHECK (limite_renovacoes >= 0),
 
     CONSTRAINT chk_configuracao_unica
         CHECK (id = 1)
@@ -142,6 +147,8 @@ CREATE TABLE emprestimo (
     data_prevista_devolucao DATE NOT NULL,
 
     data_devolucao TIMESTAMPTZ,
+    limite_renovacoes_snapshot SMALLINT NOT NULL DEFAULT 0
+        CHECK (limite_renovacoes_snapshot >= 0),
 
     CONSTRAINT chk_emprestimo_data_prevista
         CHECK (
@@ -153,6 +160,18 @@ CREATE TABLE emprestimo (
             data_devolucao IS NULL
             OR data_devolucao >= data_retirada
         )
+);
+
+CREATE TABLE renovacao_emprestimo (
+    id BIGSERIAL PRIMARY KEY,
+    emprestimo_id BIGINT NOT NULL REFERENCES emprestimo(id),
+    leitor_id BIGINT NOT NULL REFERENCES leitor(id),
+    atendente_renovacao_id BIGINT REFERENCES usuario(id),
+    numero_renovacao SMALLINT NOT NULL CHECK (numero_renovacao > 0),
+    data_prevista_anterior DATE NOT NULL,
+    data_prevista_nova DATE NOT NULL CHECK (data_prevista_nova > data_prevista_anterior),
+    renovada_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ux_renovacao_emprestimo_numero UNIQUE (emprestimo_id, numero_renovacao)
 );
 
 CREATE TABLE reserva (
@@ -197,9 +216,12 @@ CREATE TABLE multa (
     valor_diario_aplicado NUMERIC(10,2) NOT NULL
         CHECK (valor_diario_aplicado >= 0),
 
+    valor_maximo_aplicado NUMERIC(10,2) NOT NULL
+        CHECK (valor_maximo_aplicado >= 0),
+
     valor_total NUMERIC(10,2)
         GENERATED ALWAYS AS
-        (dias_atraso * valor_diario_aplicado) STORED,
+        (LEAST(dias_atraso * valor_diario_aplicado, valor_maximo_aplicado)) STORED,
 
     status VARCHAR(20) NOT NULL DEFAULT 'pendente'
         CHECK (
@@ -235,8 +257,9 @@ WHERE status = 'disponivel';
 
 -- Configuração única
 INSERT INTO configuracao_biblioteca (
-    id, prazo_emprestimo_dias, limite_emprestimos, valor_multa_dia, prazo_retirada_reserva_dias
-) VALUES (1, 14, 3, 2.50, 2);
+    id, prazo_emprestimo_dias, limite_emprestimos, valor_multa_dia,
+    valor_maximo_multa, prazo_retirada_reserva_dias, limite_renovacoes
+) VALUES (1, 14, 3, 2.50, 25.00, 2, 2);
 
 -- Usuários (admin, atendentes e leitores)
 -- Senha de teste de todos os usuários: password
@@ -305,10 +328,11 @@ INSERT INTO emprestimo (
     atendente_devolucao_id,
     data_retirada,
     data_prevista_devolucao,
-    data_devolucao
+    data_devolucao,
+    limite_renovacoes_snapshot
 ) VALUES
-(1, 2, 4, NULL, CURRENT_TIMESTAMP - INTERVAL '17 days', CURRENT_DATE - 3, NULL),
-(2, 3, 5, 4, CURRENT_TIMESTAMP - INTERVAL '20 days', CURRENT_DATE - 6, CURRENT_TIMESTAMP - INTERVAL '5 days');
+(1, 2, 4, NULL, CURRENT_TIMESTAMP - INTERVAL '17 days', CURRENT_DATE - 3, NULL, 2),
+(2, 3, 5, 4, CURRENT_TIMESTAMP - INTERVAL '20 days', CURRENT_DATE - 6, CURRENT_TIMESTAMP - INTERVAL '5 days', 2);
 
 -- Reservas: exemplar 5 separado para Maria; João aguarda em seguida na fila da mesma obra
 INSERT INTO reserva (
@@ -324,6 +348,7 @@ INSERT INTO reserva (
 (1, 3, NULL, 'ativa', CURRENT_TIMESTAMP - INTERVAL '1 day', NULL, NULL);
 
 -- Multa referente ao empréstimo 2, devolvido com um dia de atraso
-INSERT INTO multa (emprestimo_id, dias_atraso, valor_diario_aplicado, status, paga_em)
-VALUES
-(2, 1, 2.50, 'quitada', CURRENT_TIMESTAMP - INTERVAL '5 days');
+INSERT INTO multa (
+    emprestimo_id, dias_atraso, valor_diario_aplicado, valor_maximo_aplicado, status, paga_em
+)
+VALUES (2, 1, 2.50, 25.00, 'quitada', CURRENT_TIMESTAMP - INTERVAL '5 days');
