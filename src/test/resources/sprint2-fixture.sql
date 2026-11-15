@@ -1,5 +1,5 @@
 -- Usado exclusivamente por CirculacaoPostgresTest em banco cujo nome termina em _sprint2_test.
-TRUNCATE multa, renovacao_emprestimo, reserva, emprestimo, exemplar, livro_autor, livro_categoria,
+TRUNCATE avaliacao_livro, multa, renovacao_emprestimo, reserva, emprestimo, exemplar, livro_autor, livro_categoria,
     livro, autor, categoria, leitor, usuario, configuracao_biblioteca,
     aviso, aviso_preferencia RESTART IDENTITY CASCADE;
 INSERT INTO configuracao_biblioteca (
