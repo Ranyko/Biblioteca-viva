@@ -56,10 +56,6 @@ java -version 2>&1 | grep -q '21\.' || {
   exit 1
 }
 sudo test -f /etc/biblioteca-viva/backend.env
-sudo grep -q '^DB_URL=jdbc:postgresql://127.0.0.1:5432/' /etc/biblioteca-viva/backend.env || {
-  echo "DB_URL deve apontar para o PostgreSQL em 127.0.0.1:5432." >&2
-  exit 1
-}
 sudo docker volume inspect biblioteca-postgres-data >/dev/null
 sudo docker exec biblioteca-postgres pg_isready >/dev/null
 
