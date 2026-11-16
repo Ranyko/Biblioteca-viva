@@ -1,8 +1,7 @@
 package br.com.bibliotecaviva.controller;
 
-import java.util.List;
-import java.util.Map;
 import java.net.URI;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,22 +46,9 @@ public class LeitorController {
         this.reservaService = reservaService;
     }
 
-    @GetMapping("/painel")
-    public Map<String, String> painel() {
-        return Map.of("mensagem", "Acesso de leitor autorizado");
-    }
-
-    @GetMapping("/meu-painel")
-    public PainelLeitorResponse consultarMeuPainel(
-            @AuthenticationPrincipal Usuario usuario) {
-
-        Leitor leitor = leitorRepository
-                .findByUsuarioId(usuario.getId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Cadastro de leitor não encontrado."));
-
-        return painelLeitorService.consultar(leitor.getId());
+    @GetMapping({"/painel", "/meu-painel"})
+    public PainelLeitorResponse painel(@AuthenticationPrincipal Usuario usuario) {
+        return painelLeitorService.consultarPorUsuario(usuario.getId());
     }
 
     @GetMapping("/sugestoes")

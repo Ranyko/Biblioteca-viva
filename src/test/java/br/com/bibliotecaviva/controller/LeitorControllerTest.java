@@ -18,6 +18,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -32,6 +34,7 @@ import br.com.bibliotecaviva.repository.UsuarioRepository;
 import br.com.bibliotecaviva.service.SugestaoLivroService;
 import br.com.bibliotecaviva.service.TokenService;
 import br.com.bibliotecaviva.dto.PainelLeitorResponse;
+import br.com.bibliotecaviva.exception.RecursoNaoEncontradoException;
 import br.com.bibliotecaviva.service.PainelLeitorService;
 import br.com.bibliotecaviva.service.ReservaService;
 import br.com.bibliotecaviva.dto.ReservaResponse;
@@ -133,29 +136,26 @@ class LeitorControllerTest {
                 verifyNoInteractions(leitorRepository, painelLeitorService);
         }
 
-        @Test
-        void deveRetornar200EConsultarPainelDoLeitorAutenticado()
+        @ParameterizedTest
+        @ValueSource(strings = {"/leitor/painel", "/leitor/meu-painel"})
+        void deveRetornar200EConsultarPainelDoLeitorAutenticado(String rota)
                         throws Exception {
                 when(tokenService.validarEObterId("token-leitor"))
                                 .thenReturn(Optional.of(10L));
                 when(usuarioRepository.findById(10L))
                                 .thenReturn(Optional.of(leitorUsuario));
-                when(leitorRepository.findByUsuarioId(10L))
-                                .thenReturn(Optional.of(leitor));
-
-                when(painelLeitorService.consultar(20L))
+                when(painelLeitorService.consultarPorUsuario(10L))
                                 .thenReturn(new PainelLeitorResponse(
                                                 List.of(), List.of(), List.of()));
 
-                mockMvc.perform(get("/leitor/meu-painel")
+                mockMvc.perform(get(rota)
                                 .header("Authorization", "Bearer token-leitor"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.emprestimos").isArray())
                                 .andExpect(jsonPath("$.reservas").isArray())
                                 .andExpect(jsonPath("$.multas").isArray());
 
-                verify(leitorRepository).findByUsuarioId(10L);
-                verify(painelLeitorService).consultar(20L);
+                verify(painelLeitorService).consultarPorUsuario(10L);
         }
 
         @Test
@@ -165,15 +165,14 @@ class LeitorControllerTest {
                                 .thenReturn(Optional.of(10L));
                 when(usuarioRepository.findById(10L))
                                 .thenReturn(Optional.of(leitorUsuario));
-                when(leitorRepository.findByUsuarioId(10L))
-                                .thenReturn(Optional.empty());
+                when(painelLeitorService.consultarPorUsuario(10L))
+                                .thenThrow(new RecursoNaoEncontradoException("Cadastro de leitor não encontrado"));
 
                 mockMvc.perform(get("/leitor/meu-painel")
                                 .header("Authorization", "Bearer token-leitor"))
                                 .andExpect(status().isNotFound());
 
-                verify(leitorRepository).findByUsuarioId(10L);
-                verifyNoInteractions(painelLeitorService);
+                verify(painelLeitorService).consultarPorUsuario(10L);
         }
 
         @Test
