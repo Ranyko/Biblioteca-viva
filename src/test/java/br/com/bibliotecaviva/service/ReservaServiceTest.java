@@ -30,6 +30,7 @@ import br.com.bibliotecaviva.model.Usuario;
 import br.com.bibliotecaviva.model.Reserva;
 import br.com.bibliotecaviva.model.Exemplar;
 import br.com.bibliotecaviva.model.StatusExemplar;
+import br.com.bibliotecaviva.repository.CirculacaoRepository;
 import br.com.bibliotecaviva.repository.ExemplarRepository;
 import br.com.bibliotecaviva.repository.ReservaRepository;
 
@@ -47,6 +48,12 @@ class ReservaServiceTest {
 
         @Mock
         LivroService livroService;
+
+        @Mock
+        CirculacaoRepository circulacaoRepository;
+
+        @Mock
+        CirculacaoService circulacaoService;
 
         @InjectMocks
         ReservaService service;
@@ -260,7 +267,7 @@ class ReservaServiceTest {
                 ReservaCancelamentoResponse resposta = service.cancelar(1L);
 
                 verify(reservaRepository)
-                                .save(reserva);
+                                .saveAndFlush(reserva);
 
                 assertEquals(
                                 StatusReserva.CANCELADA,
@@ -272,31 +279,32 @@ class ReservaServiceTest {
         }
 
         @Test
-        void cancelaReservaELiberaExemplarReservado() {
+        void encaminhaExemplarSeparadoAoCancelar() {
                 Reserva reserva = new Reserva();
-                reserva.setStatus(StatusReserva.ATIVA);
-
-                Exemplar exemplar = new Exemplar();
-                exemplar.setStatus(StatusExemplar.RESERVADO);
+                reserva.setStatus(StatusReserva.DISPONIVEL);
+                Exemplar exemplar = mock(Exemplar.class);
+                when(exemplar.getId()).thenReturn(2L);
                 reserva.setExemplar(exemplar);
+                var separado = new CirculacaoRepository.ExemplarDados(2L, 1L, true, "reservado");
+                when(circulacaoRepository.travarExemplar(2L)).thenReturn(separado);
 
                 when(reservaRepository.findById(1L))
                                 .thenReturn(java.util.Optional.of(reserva));
 
                 ReservaCancelamentoResponse resposta = service.cancelar(1L);
 
-                verify(reservaRepository).save(reserva);
+                verify(reservaRepository).saveAndFlush(reserva);
+                verify(circulacaoService).encaminharExemplarCancelado(separado);
 
                 assertEquals(StatusReserva.CANCELADA, reserva.getStatus());
-                assertEquals(StatusExemplar.DISPONIVEL, exemplar.getStatus());
                 assertEquals(null, reserva.getExemplar());
                 assertEquals("cancelada", resposta.status());
         }
 
         @Test
-        void cancelaReservaSemAlterarExemplarEmprestado() {
+        void rejeitaCancelamentoDeReservaJaAtendida() {
                 Reserva reserva = new Reserva();
-                reserva.setStatus(StatusReserva.ATIVA);
+                reserva.setStatus(StatusReserva.ATENDIDA);
 
                 Exemplar exemplar = new Exemplar();
                 exemplar.setStatus(StatusExemplar.EMPRESTADO);
@@ -305,14 +313,13 @@ class ReservaServiceTest {
                 when(reservaRepository.findById(1L))
                                 .thenReturn(java.util.Optional.of(reserva));
 
-                ReservaCancelamentoResponse resposta = service.cancelar(1L);
+                assertThrows(ConflitoException.class, () -> service.cancelar(1L));
 
-                verify(reservaRepository).save(reserva);
+                verify(reservaRepository, never()).saveAndFlush(any());
+                verifyNoInteractions(circulacaoService);
 
-                assertEquals(StatusReserva.CANCELADA, reserva.getStatus());
-                assertEquals(StatusExemplar.EMPRESTADO, exemplar.getStatus());
+                assertEquals(StatusReserva.ATENDIDA, reserva.getStatus());
                 assertEquals(exemplar, reserva.getExemplar());
-                assertEquals("cancelada", resposta.status());
         }
 
         @Test

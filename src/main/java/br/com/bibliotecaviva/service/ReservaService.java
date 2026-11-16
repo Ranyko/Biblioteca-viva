@@ -18,6 +18,7 @@ import br.com.bibliotecaviva.model.Reserva;
 import br.com.bibliotecaviva.model.Exemplar;
 import br.com.bibliotecaviva.model.StatusExemplar;
 import br.com.bibliotecaviva.model.StatusReserva;
+import br.com.bibliotecaviva.repository.CirculacaoRepository;
 import br.com.bibliotecaviva.repository.ExemplarRepository;
 import br.com.bibliotecaviva.repository.ReservaRepository;
 
@@ -28,17 +29,23 @@ public class ReservaService {
         private final ExemplarRepository exemplarRepository;
         private final LeitorService leitorService;
         private final LivroService livroService;
+        private final CirculacaoRepository circulacaoRepository;
+        private final CirculacaoService circulacaoService;
 
         public ReservaService(
                         ReservaRepository reservaRepository,
                         ExemplarRepository exemplarRepository,
                         LeitorService leitorService,
-                        LivroService livroService) {
+                        LivroService livroService,
+                        CirculacaoRepository circulacaoRepository,
+                        CirculacaoService circulacaoService) {
 
                 this.reservaRepository = reservaRepository;
                 this.exemplarRepository = exemplarRepository;
                 this.leitorService = leitorService;
                 this.livroService = livroService;
+                this.circulacaoRepository = circulacaoRepository;
+                this.circulacaoService = circulacaoService;
         }
 
         @Transactional
@@ -54,6 +61,7 @@ public class ReservaService {
                                         "Leitor inativo não pode realizar reservas");
                 }
 
+                circulacaoRepository.travarLivroParaAlterarReservas(livroId);
                 Livro livro = livroService.buscarEntidade(livroId);
 
                 long exemplaresDisponiveis = exemplarRepository.countByLivroIdAndStatus(
@@ -120,23 +128,26 @@ public class ReservaService {
 
         @Transactional
         public ReservaCancelamentoResponse cancelar(Long reservaId) {
-
+                circulacaoRepository.travarLivroDaReserva(reservaId);
                 Reserva reserva = reservaRepository.findById(reservaId)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                                                 "Reserva não encontrada"));
 
-                Exemplar exemplar = reserva.getExemplar();
-
-                if (exemplar != null
-                                && exemplar.getStatus() == StatusExemplar.RESERVADO) {
-
-                        exemplar.setStatus(StatusExemplar.DISPONIVEL);
-                        reserva.setExemplar(null);
+                StatusReserva status = reserva.getStatus();
+                if (status != StatusReserva.ATIVA && status != StatusReserva.DISPONIVEL) {
+                        throw new ConflitoException("A reserva já foi encerrada");
                 }
 
+                Exemplar exemplar = reserva.getExemplar();
+                var separado = status == StatusReserva.DISPONIVEL && exemplar != null
+                                ? circulacaoRepository.travarExemplar(exemplar.getId()) : null;
                 reserva.setStatus(StatusReserva.CANCELADA);
-
-                reservaRepository.save(reserva);
+                reserva.setExemplar(null);
+                // Retira a alocação anterior antes de vincular o exemplar a outra reserva.
+                reservaRepository.saveAndFlush(reserva);
+                if (separado != null && "reservado".equals(separado.status())) {
+                        circulacaoService.encaminharExemplarCancelado(separado);
+                }
 
                 return new ReservaCancelamentoResponse(
                                 reserva.getId(),

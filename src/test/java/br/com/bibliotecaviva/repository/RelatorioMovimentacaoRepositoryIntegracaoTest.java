@@ -22,7 +22,7 @@ import br.com.bibliotecaviva.dto.MovimentacaoCsvResponse;
 
 @SpringBootTest
 @Transactional
-@EnabledIfEnvironmentVariable(named = "RELATORIO_TEST_DB_URL", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "SPRINT2_TEST_DB_URL", matches = ".+")
 class RelatorioMovimentacaoRepositoryIntegracaoTest {
 
         private static final LocalDate INICIO = LocalDate.of(2026, 10, 1);
@@ -46,9 +46,7 @@ class RelatorioMovimentacaoRepositoryIntegracaoTest {
         static void configurarBancoDeTeste(
                         DynamicPropertyRegistry registry) {
 
-                String url = System.getenv("RELATORIO_TEST_DB_URL");
-                String usuario = System.getenv("RELATORIO_TEST_DB_USER");
-                String senha = System.getenv("RELATORIO_TEST_DB_PASSWORD");
+                String url = System.getenv("SPRINT2_TEST_DB_URL");
 
                 if (url == null || !url.matches(
                                 "jdbc:postgresql://[^/]+/[A-Za-z0-9_]+_sprint2_test(?:\\?.*)?")) {
@@ -56,23 +54,13 @@ class RelatorioMovimentacaoRepositoryIntegracaoTest {
                                         "O teste exige um banco exclusivo com sufixo _sprint2_test");
                 }
 
-                if (usuario == null || usuario.isBlank()
-                                || senha == null || senha.isBlank()) {
-                        throw new IllegalStateException(
-                                        "As credenciais do banco de teste devem estar configuradas");
-                }
-
-                registry.add("spring.datasource.url", () -> url);
-                registry.add("spring.datasource.username", () -> usuario);
-                registry.add("spring.datasource.password", () -> senha);
-
                 registry.add("spring.datasource.url", () -> url);
                 registry.add(
                                 "spring.datasource.username",
-                                () -> System.getenv("RELATORIO_TEST_DB_USER"));
+                                () -> System.getenv().getOrDefault("SPRINT2_TEST_DB_USER", "postgres"));
                 registry.add(
                                 "spring.datasource.password",
-                                () -> System.getenv("RELATORIO_TEST_DB_PASSWORD"));
+                                () -> System.getenv().getOrDefault("SPRINT2_TEST_DB_PASSWORD", "postgres"));
         }
 
         @BeforeEach
