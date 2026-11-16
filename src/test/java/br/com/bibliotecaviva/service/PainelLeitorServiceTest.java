@@ -37,7 +37,7 @@ class PainelLeitorServiceTest {
         Leitor leitor = mock(Leitor.class);
         when(leitorRepository.findByUsuarioId(12L)).thenReturn(Optional.of(leitor));
         when(leitor.getId()).thenReturn(34L);
-        when(painelLeitorRepository.listarEmprestimosAtivos(34L)).thenReturn(List.of());
+        when(painelLeitorRepository.listarEmprestimos(34L)).thenReturn(List.of());
         when(painelLeitorRepository.listarReservas(34L)).thenReturn(List.of());
         when(painelLeitorRepository.listarMultas(34L)).thenReturn(List.of());
 
@@ -46,7 +46,7 @@ class PainelLeitorServiceTest {
         assertThat(resposta.emprestimos()).isEmpty();
         assertThat(resposta.reservas()).isEmpty();
         assertThat(resposta.multas()).isEmpty();
-        verify(painelLeitorRepository).listarEmprestimosAtivos(34L);
+        verify(painelLeitorRepository).listarEmprestimos(34L);
         verify(painelLeitorRepository).listarReservas(34L);
         verify(painelLeitorRepository).listarMultas(34L);
     }

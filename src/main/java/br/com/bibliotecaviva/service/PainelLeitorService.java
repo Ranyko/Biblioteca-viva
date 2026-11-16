@@ -26,7 +26,7 @@ public class PainelLeitorService {
                 .getId();
 
         return new PainelLeitorResponse(
-                painelLeitorRepository.listarEmprestimosAtivos(leitorId),
+                painelLeitorRepository.listarEmprestimos(leitorId),
                 painelLeitorRepository.listarReservas(leitorId),
                 painelLeitorRepository.listarMultas(leitorId));
     }
