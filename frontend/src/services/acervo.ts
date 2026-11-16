@@ -16,10 +16,20 @@ const TAMANHO = 100; // máximo aceito pelo back
 
 type Filtro = { titulo?: string; autor?: string; categoria?: string };
 
-function buscar(filtro: Filtro) {
-  const qs = new URLSearchParams({ pagina: '0', tamanho: String(TAMANHO) });
+function buscar(filtro: Filtro, pagina = 0) {
+  const qs = new URLSearchParams({ pagina: String(pagina), tamanho: String(TAMANHO) });
   for (const [campo, valor] of Object.entries(filtro)) if (valor) qs.set(campo, valor);
   return api<Pagina<ObraAcervo>>(`/acervo?${qs}`);
+}
+
+/** Lista todas as obras paginando o acervo, para seletores que não podem omitir resultados. */
+export async function listarAcervoCompleto(): Promise<ObraAcervo[]> {
+  const obras: ObraAcervo[] = [];
+  for (let pagina = 0; ; pagina++) {
+    const resposta = await buscar({}, pagina);
+    obras.push(...resposta.itens);
+    if (obras.length >= resposta.total || resposta.itens.length === 0) return obras;
+  }
 }
 
 /**

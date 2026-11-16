@@ -25,18 +25,23 @@ export const MENU_POR_PERFIL: Record<Perfil, ItemMenu[]> = {
     { rotulo: 'Usuários', to: '/usuarios', ativoEm: ['/usuarios', '/cadastrar-usuario'] },
     { rotulo: 'Livros', to: '/livros', ativoEm: ['/livros'] },
     { rotulo: 'Exemplares', to: '/exemplares' },
+    { rotulo: 'Renovações', to: '/renovacoes' },
+    { rotulo: 'Clubes', to: '/clubes-equipe' },
     { rotulo: 'Avisos', to: '/config-avisos' },
   ],
   atendente: [
     { rotulo: 'Leitores', to: '/leitores' },
     { rotulo: 'Empréstimo', to: '/emprestimo' },
     { rotulo: 'Devolução', to: '/devolucao' },
+    { rotulo: 'Renovações', to: '/renovacoes' },
+    { rotulo: 'Clubes', to: '/clubes-equipe' },
     { rotulo: 'Fila de Reservas', to: '/filareserva' },
     { rotulo: 'Pendências', to: '/pendencias' },
   ],
   leitor: [
     { rotulo: 'Acervo', to: '/acervo', ativoEm: ['/acervo', '/reserva'] },
     { rotulo: 'Minha situação', to: '/minha-situacao' },
+    { rotulo: 'Clubes', to: '/clubes-leitura' },
     { rotulo: 'Avisos', to: '/avisos' },
   ],
 };

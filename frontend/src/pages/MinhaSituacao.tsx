@@ -3,7 +3,9 @@ import { Navbar } from '../components/Navbar';
 import { getUsuario, textoErro } from '../services/api';
 import { situacaoService, type SituacaoLeitor } from '../services/situacao';
 import { dataBR, dataHoraBR, diasDeAtraso, moeda } from '../services/formato';
+import { renovacoesService, type Renovacao } from '../services/renovacoes';
 import './Avisos.css';
+import './MinhaSituacao.css';
 
 const ROTULO_RESERVA: Record<string, string> = {
   ativa: 'Na fila',
@@ -22,6 +24,13 @@ const ROTULO_MULTA: Record<string, string> = {
 export function MinhaSituacao() {
   const [dados, setDados] = useState<SituacaoLeitor | null>(null);
   const [erro, setErro] = useState('');
+  const [erroRenovacao, setErroRenovacao] = useState('');
+  const [renovandoId, setRenovandoId] = useState<number | null>(null);
+  const [historicoAbertoId, setHistoricoAbertoId] = useState<number | null>(null);
+  const [historicos, setHistoricos] = useState<Record<number, Renovacao[]>>({});
+  const [carregandoHistoricoId, setCarregandoHistoricoId] = useState<number | null>(null);
+  const [errosHistorico, setErrosHistorico] = useState<Record<number, string>>({});
+  const [sucessosRenovacao, setSucessosRenovacao] = useState<Record<number, string>>({});
 
   useEffect(() => {
     let cancelado = false;
@@ -38,12 +47,62 @@ export function MinhaSituacao() {
     };
   }, []);
 
-  const pendente = dados?.multas.filter((m) => m.situacao === 'pendente').reduce((s, m) => s + m.valorTotal, 0) ?? 0;
+  const renovar = async (emprestimoId: number) => {
+    setErroRenovacao('');
+    setSucessosRenovacao((atuais) => ({ ...atuais, [emprestimoId]: '' }));
+    setRenovandoId(emprestimoId);
+    try {
+      const renovacao = await renovacoesService.renovarComoLeitor(emprestimoId);
+      setDados((atuais) => atuais && ({
+        ...atuais,
+        emprestimos: atuais.emprestimos.map((emprestimo) =>
+          emprestimo.id === emprestimoId
+            ? { ...emprestimo, dataPrevistaDevolucao: renovacao.dataPrevistaNova }
+            : emprestimo,
+        ),
+      }));
+      setHistoricos((atuais) => emprestimoId in atuais
+        ? { ...atuais, [emprestimoId]: [...atuais[emprestimoId], renovacao] }
+        : atuais,
+      );
+      setSucessosRenovacao((atuais) => ({
+        ...atuais,
+        [emprestimoId]: `Empréstimo renovado. Nova devolução prevista para ${dataBR(renovacao.dataPrevistaNova)}.`,
+      }));
+    } catch (err) {
+      setErroRenovacao(textoErro(err));
+    } finally {
+      setRenovandoId(null);
+    }
+  };
+
+  const alternarHistorico = async (emprestimoId: number) => {
+    if (historicoAbertoId === emprestimoId) {
+      setHistoricoAbertoId(null);
+      return;
+    }
+    setHistoricoAbertoId(emprestimoId);
+    if (historicos[emprestimoId]) return;
+
+    setCarregandoHistoricoId(emprestimoId);
+    setErrosHistorico((atuais) => ({ ...atuais, [emprestimoId]: '' }));
+    try {
+      const historico = await renovacoesService.historicoComoLeitor(emprestimoId);
+      setHistoricos((atuais) => ({ ...atuais, [emprestimoId]: historico }));
+    } catch (err) {
+      setErrosHistorico((atuais) => ({ ...atuais, [emprestimoId]: textoErro(err) }));
+    } finally {
+      setCarregandoHistoricoId(null);
+    }
+  };
+
+  const pendente = dados?.multas
+    .filter((m) => m.situacao === 'pendente')
+    .reduce((soma, multa) => soma + multa.valorTotal, 0) ?? 0;
 
   return (
     <div className="avisos-page">
       <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Leitor' }} />
-
       <main className="avisos-main">
         <div className="avisos-header">
           <h1 className="avisos-titulo">Minha situação</h1>
@@ -54,43 +113,98 @@ export function MinhaSituacao() {
 
         {dados && (
           <>
-            <div className="avisos-card">
+            <section className="avisos-card">
               <h2>Empréstimos</h2>
               {dados.emprestimos.length === 0 ? (
                 <p className="avisos-vazio">Você ainda não tem empréstimos.</p>
               ) : (
-                <table className="avisos-tabela">
-                  <thead>
-                    <tr>
-                      <th>Obra</th>
-                      <th>Retirada</th>
-                      <th>Devolução prevista</th>
-                      <th>Devolvido em</th>
-                      <th>Situação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dados.emprestimos.map((e) => {
-                      const ativo = e.dataDevolucao === null;
-                      const atraso = ativo ? diasDeAtraso(e.dataPrevistaDevolucao) : 0;
-                      return (
-                        <tr key={e.id}>
-                          <td>{e.livroTitulo}</td>
-                          <td>{dataHoraBR(e.dataRetirada)}</td>
-                          <td>{dataBR(e.dataPrevistaDevolucao)}</td>
-                          <td>{e.dataDevolucao ? dataHoraBR(e.dataDevolucao) : '—'}</td>
-                          <td style={atraso > 0 ? { color: '#b91c1c', fontWeight: 600 } : undefined}>
-                            {!ativo ? 'Devolvido' : atraso > 0 ? `Atrasado (${atraso} ${atraso === 1 ? 'dia' : 'dias'})` : 'Em andamento'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div className="situacao-tabela-wrap">
+                  <table className="avisos-tabela situacao-tabela">
+                    <thead>
+                      <tr>
+                        <th>Obra</th>
+                        <th>Retirada</th>
+                        <th>Devolução prevista</th>
+                        <th>Devolvido em</th>
+                        <th>Situação</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dados.emprestimos.map((emprestimo) => {
+                        const ativo = emprestimo.dataDevolucao === null;
+                        const atraso = ativo ? diasDeAtraso(emprestimo.dataPrevistaDevolucao) : 0;
+                        return [
+                          <tr key={emprestimo.id}>
+                            <td>{emprestimo.livroTitulo}</td>
+                            <td>{dataHoraBR(emprestimo.dataRetirada)}</td>
+                            <td>{dataBR(emprestimo.dataPrevistaDevolucao)}</td>
+                            <td>{emprestimo.dataDevolucao ? dataHoraBR(emprestimo.dataDevolucao) : '—'}</td>
+                            <td style={atraso > 0 ? { color: '#b91c1c', fontWeight: 600 } : undefined}>
+                              {!ativo
+                                ? 'Devolvido'
+                                : atraso > 0
+                                  ? `Atrasado (${atraso} ${atraso === 1 ? 'dia' : 'dias'})`
+                                  : 'Em andamento'}
+                            </td>
+                            <td className="situacao-acoes">
+                              {ativo && (
+                                <button
+                                  type="button"
+                                  className="avisos-btn"
+                                  disabled={atraso > 0 || renovandoId === emprestimo.id}
+                                  onClick={() => void renovar(emprestimo.id)}
+                                >
+                                  {renovandoId === emprestimo.id ? 'Renovando...' : 'Renovar'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="avisos-btn sec"
+                                onClick={() => void alternarHistorico(emprestimo.id)}
+                              >
+                                {historicoAbertoId === emprestimo.id ? 'Ocultar histórico' : 'Histórico'}
+                              </button>
+                            </td>
+                          </tr>,
+                          ...(historicoAbertoId === emprestimo.id
+                            ? [<tr key={`${emprestimo.id}-historico`}>
+                                <td colSpan={6}>
+                                  {carregandoHistoricoId === emprestimo.id && (
+                                    <p className="avisos-vazio">Carregando histórico...</p>
+                                  )}
+                                  {errosHistorico[emprestimo.id] && (
+                                    <p className="avisos-erro">{errosHistorico[emprestimo.id]}</p>
+                                  )}
+                                  {historicos[emprestimo.id] && (
+                                    historicos[emprestimo.id].length === 0
+                                      ? <p className="avisos-vazio">Este empréstimo ainda não foi renovado.</p>
+                                      : <div className="historico-renovacoes">
+                                          {historicos[emprestimo.id].map((renovacao) => (
+                                            <p key={renovacao.id}>
+                                              Renovação {renovacao.numeroRenovacao}/{renovacao.limiteRenovacoesSnapshot}:{' '}
+                                              devolução alterada de {dataBR(renovacao.dataPrevistaAnterior)} para{' '}
+                                              {dataBR(renovacao.dataPrevistaNova)} em {dataHoraBR(renovacao.renovadaEm)}.
+                                            </p>
+                                          ))}
+                                        </div>
+                                  )}
+                                </td>
+                              </tr>]
+                            : []),
+                        ];
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </div>
+              {erroRenovacao && <p className="avisos-erro" role="alert">{erroRenovacao}</p>}
+              {Object.entries(sucessosRenovacao).map(([id, mensagem]) =>
+                mensagem ? <p key={id} className="avisos-ok" role="status">{mensagem}</p> : null,
+              )}
+            </section>
 
-            <div className="avisos-card">
+            <section className="avisos-card">
               <h2>Reservas</h2>
               {dados.reservas.length === 0 ? (
                 <p className="avisos-vazio">Você não tem reservas.</p>
@@ -105,20 +219,20 @@ export function MinhaSituacao() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dados.reservas.map((r) => (
-                      <tr key={r.id}>
-                        <td>{r.livroTitulo}</td>
-                        <td>{ROTULO_RESERVA[r.situacao] ?? r.situacao}</td>
-                        <td>{r.posicaoFila ?? '—'}</td>
-                        <td>{r.dataLimiteRetirada ? dataHoraBR(r.dataLimiteRetirada) : '—'}</td>
+                    {dados.reservas.map((reserva) => (
+                      <tr key={reserva.id}>
+                        <td>{reserva.livroTitulo}</td>
+                        <td>{ROTULO_RESERVA[reserva.situacao] ?? reserva.situacao}</td>
+                        <td>{reserva.posicaoFila ?? '—'}</td>
+                        <td>{reserva.dataLimiteRetirada ? dataHoraBR(reserva.dataLimiteRetirada) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
-            </div>
+            </section>
 
-            <div className="avisos-card">
+            <section className="avisos-card">
               <h2>Multas</h2>
               {dados.multas.length === 0 ? (
                 <p className="avisos-vazio">Você não tem multas.</p>
@@ -137,19 +251,19 @@ export function MinhaSituacao() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dados.multas.map((m) => (
-                        <tr key={m.id}>
-                          <td>{moeda(m.valorTotal)}</td>
-                          <td>{ROTULO_MULTA[m.situacao] ?? m.situacao}</td>
-                          <td>{dataHoraBR(m.geradaEm)}</td>
-                          <td>{m.pagaEm ? dataHoraBR(m.pagaEm) : '—'}</td>
+                      {dados.multas.map((multa) => (
+                        <tr key={multa.id}>
+                          <td>{moeda(multa.valorTotal)}</td>
+                          <td>{ROTULO_MULTA[multa.situacao] ?? multa.situacao}</td>
+                          <td>{dataHoraBR(multa.geradaEm)}</td>
+                          <td>{multa.pagaEm ? dataHoraBR(multa.pagaEm) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </>
               )}
-            </div>
+            </section>
           </>
         )}
       </main>

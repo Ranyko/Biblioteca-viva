@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { homePorPerfil } from '../auth/perfis';
+import { API_URL } from '../services/api'
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+
   // Novas propriedades necessárias para a integração
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
@@ -18,7 +19,7 @@ export function LoginForm() {
     setCarregando(true);
 
     try {
-      const response = await fetch('http://localhost:8080/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

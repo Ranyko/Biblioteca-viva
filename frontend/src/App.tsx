@@ -20,9 +20,13 @@ import { Avisos } from './pages/Avisos';
 import { MinhaSituacao } from './pages/MinhaSituacao';
 import { Pendencias } from './pages/Pendencias';
 import { ConfigAvisos } from './pages/ConfigAvisos';
+import { RenovacaoAtendente } from './pages/RenovacaoAtendente';
+import { ClubesEquipe } from './pages/ClubesEquipe';
+import { ClubesLeitura } from './pages/ClubesLeitura';
 
 const ADMIN: Perfil[] = ['administrador'];
 const ATENDENTE: Perfil[] = ['atendente'];
+const ATENDIMENTO: Perfil[] = ['atendente', 'administrador'];
 const LEITOR: Perfil[] = ['leitor'];
 
 // Permissões por tela, conforme o Roteiro do Protótipo Navegável.
@@ -45,6 +49,8 @@ export function App() {
         <Route path="/livros/cadastrar" element={protegido(ADMIN, <CadastrarLivro />)} />
         <Route path="/livros/:id/editar" element={protegido(ADMIN, <CadastrarLivro />)} />
         <Route path="/exemplares" element={protegido(ADMIN, <GerenciarExemplares />)} />
+        <Route path="/renovacoes" element={protegido(ATENDIMENTO, <RenovacaoAtendente />)} />
+        <Route path="/clubes-equipe" element={protegido(ATENDIMENTO, <ClubesEquipe />)} />
 
         <Route path="/config-avisos" element={protegido(ADMIN, <ConfigAvisos />)} />
 
@@ -62,6 +68,7 @@ export function App() {
         <Route path="/reserva" element={protegido(LEITOR, <Reserva />)} />
         <Route path="/avisos" element={protegido(LEITOR, <Avisos />)} />
         <Route path="/minha-situacao" element={protegido(LEITOR, <MinhaSituacao />)} />
+        <Route path="/clubes-leitura" element={protegido(LEITOR, <ClubesLeitura />)} />
 
         <Route path="*" element={<h2 style={{ padding: '2rem' }}>Página não encontrada</h2>} />
       </Routes>
