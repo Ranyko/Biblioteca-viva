@@ -80,22 +80,31 @@ public class CirculacaoService {
                 ReferenciaTipo.multa, multaId, null);
         }
 
+        Optional<Long> proxima = encaminharExemplar(exemplar, regras, agora);
+        String status = proxima.isPresent() ? "reservado" : "disponivel";
+        return new DevolucaoResponse(devolvido, atraso, valor, status, proxima.orElse(null));
+    }
+
+    void encaminharExemplarCancelado(CirculacaoRepository.ExemplarDados exemplar) {
+        encaminharExemplar(exemplar, repository.regras(), OffsetDateTime.now(clock));
+    }
+
+    private Optional<Long> encaminharExemplar(CirculacaoRepository.ExemplarDados exemplar,
+            CirculacaoRepository.Regras regras, OffsetDateTime agora) {
         if (exemplar.livroAtivo()) repository.travarLeitoresDaFila(exemplar.livroId());
         Optional<Long> proxima = exemplar.livroAtivo()
             ? repository.primeiraReservaElegivel(exemplar.livroId(), regras.limite()) : Optional.empty();
-        String status = proxima.isPresent() ? "reservado" : "disponivel";
         proxima.ifPresent(id -> {
-            repository.disponibilizarReserva(id, exemplar.id(), agora,
-                agora.plusDays(regras.prazoReservaDias()));
-            // Gancho síncrono (doc §6): aviso de reserva disponível na mesma transação.
+            var limiteRetirada = agora.plusDays(regras.prazoReservaDias());
+            repository.disponibilizarReserva(id, exemplar.id(), agora, limiteRetirada);
             avisoService.criar(repository.usuarioIdDaReserva(id), TipoAviso.RESERVA_DISPONIVEL,
                 "Exemplar reservado disponível",
                 "Seu exemplar reservado está disponível para retirada até "
-                    + agora.plusDays(regras.prazoReservaDias()).toLocalDate() + ".",
+                    + limiteRetirada.toLocalDate() + ".",
                 ReferenciaTipo.reserva, id, null);
         });
-        repository.statusExemplar(exemplar.id(), status);
-        return new DevolucaoResponse(devolvido, atraso, valor, status, proxima.orElse(null));
+        repository.statusExemplar(exemplar.id(), proxima.isPresent() ? "reservado" : "disponivel");
+        return proxima;
     }
 
     @Transactional(readOnly = true)

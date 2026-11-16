@@ -1,0 +1,296 @@
+package br.com.bibliotecaviva.controller;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+
+import org.springframework.http.MediaType;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+
+import br.com.bibliotecaviva.model.Leitor;
+import br.com.bibliotecaviva.model.PerfilUsuario;
+import br.com.bibliotecaviva.model.Usuario;
+import br.com.bibliotecaviva.repository.LeitorRepository;
+import br.com.bibliotecaviva.repository.UsuarioRepository;
+import br.com.bibliotecaviva.service.SugestaoLivroService;
+import br.com.bibliotecaviva.service.TokenService;
+import br.com.bibliotecaviva.dto.PainelLeitorResponse;
+import br.com.bibliotecaviva.exception.RecursoNaoEncontradoException;
+import br.com.bibliotecaviva.service.PainelLeitorService;
+import br.com.bibliotecaviva.service.ReservaService;
+import br.com.bibliotecaviva.dto.ReservaResponse;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class LeitorControllerTest {
+
+        @Autowired
+        private MockMvc mockMvc;
+
+        @MockitoBean
+        private LeitorRepository leitorRepository;
+
+        @MockitoBean
+        private SugestaoLivroService sugestaoLivroService;
+
+        @MockitoBean
+        private TokenService tokenService;
+
+        @MockitoBean
+        private UsuarioRepository usuarioRepository;
+
+        @MockitoBean
+        private PainelLeitorService painelLeitorService;
+
+        @MockitoBean
+        private ReservaService reservaService;
+
+        private Usuario leitorUsuario;
+        private Leitor leitor;
+        private Usuario atendenteUsuario;
+
+        @BeforeEach
+        void setUp() {
+                leitorUsuario = mock(Usuario.class);
+                when(leitorUsuario.getId()).thenReturn(10L);
+                when(leitorUsuario.getPerfil()).thenReturn(PerfilUsuario.LEITOR);
+                when(leitorUsuario.isAtivo()).thenReturn(true);
+
+                leitor = mock(Leitor.class);
+                when(leitor.getId()).thenReturn(20L);
+        }
+
+        @Test
+        void deveRetornar401QuandoNaoAutenticado() throws Exception {
+                mockMvc.perform(get("/leitor/sugestoes"))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(leitorRepository, sugestaoLivroService);
+        }
+
+        @Test
+        void deveRetornar200EConsultarSugestoesDoLeitorAutenticado()
+                        throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(leitorRepository.findByUsuarioId(10L))
+                                .thenReturn(Optional.of(leitor));
+                when(sugestaoLivroService.buscarSugestoes(20L))
+                                .thenReturn(List.of());
+
+                mockMvc.perform(get("/leitor/sugestoes")
+                                .header("Authorization", "Bearer token-leitor"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$").isArray());
+
+                verify(leitorRepository).findByUsuarioId(10L);
+                verify(sugestaoLivroService).buscarSugestoes(20L);
+        }
+
+        @Test
+        void naoDevePermitirAcessoDeAtendente() throws Exception {
+                atendenteUsuario = mock(Usuario.class);
+
+                when(atendenteUsuario.getId()).thenReturn(30L);
+                when(atendenteUsuario.getPerfil()).thenReturn(PerfilUsuario.ATENDENTE);
+                when(atendenteUsuario.isAtivo()).thenReturn(true);
+
+                when(tokenService.validarEObterId("token-atendente"))
+                                .thenReturn(Optional.of(30L));
+                when(usuarioRepository.findById(30L))
+                                .thenReturn(Optional.of(atendenteUsuario));
+
+                mockMvc.perform(get("/leitor/sugestoes")
+                                .header("Authorization", "Bearer token-atendente"))
+                                .andExpect(status().isForbidden());
+
+                verifyNoInteractions(leitorRepository, sugestaoLivroService);
+        }
+
+        @Test
+        void deveRetornar401QuandoNaoAutenticadoAoConsultarPainel() throws Exception {
+                mockMvc.perform(get("/leitor/meu-painel"))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(leitorRepository, painelLeitorService);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"/leitor/painel", "/leitor/meu-painel"})
+        void deveRetornar200EConsultarPainelDoLeitorAutenticado(String rota)
+                        throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(painelLeitorService.consultarPorUsuario(10L))
+                                .thenReturn(new PainelLeitorResponse(
+                                                List.of(), List.of(), List.of()));
+
+                mockMvc.perform(get(rota)
+                                .header("Authorization", "Bearer token-leitor"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.emprestimos").isArray())
+                                .andExpect(jsonPath("$.reservas").isArray())
+                                .andExpect(jsonPath("$.multas").isArray());
+
+                verify(painelLeitorService).consultarPorUsuario(10L);
+        }
+
+        @Test
+        void deveRetornar404QuandoLeitorNaoPossuiCadastro()
+                        throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(painelLeitorService.consultarPorUsuario(10L))
+                                .thenThrow(new RecursoNaoEncontradoException("Cadastro de leitor não encontrado"));
+
+                mockMvc.perform(get("/leitor/meu-painel")
+                                .header("Authorization", "Bearer token-leitor"))
+                                .andExpect(status().isNotFound());
+
+                verify(painelLeitorService).consultarPorUsuario(10L);
+        }
+
+        @Test
+        void naoDevePermitirAcessoDeAtendenteAoPainel() throws Exception {
+                atendenteUsuario = mock(Usuario.class);
+
+                when(atendenteUsuario.getId()).thenReturn(30L);
+                when(atendenteUsuario.getPerfil()).thenReturn(PerfilUsuario.ATENDENTE);
+                when(atendenteUsuario.isAtivo()).thenReturn(true);
+
+                when(tokenService.validarEObterId("token-atendente"))
+                                .thenReturn(Optional.of(30L));
+                when(usuarioRepository.findById(30L))
+                                .thenReturn(Optional.of(atendenteUsuario));
+
+                mockMvc.perform(get("/leitor/meu-painel")
+                                .header("Authorization", "Bearer token-atendente"))
+                                .andExpect(status().isForbidden());
+
+                verifyNoInteractions(leitorRepository, painelLeitorService);
+        }
+
+        @Test
+        void devePermitirQueLeitorAutenticadoCrieReserva() throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(leitorRepository.findByUsuarioId(10L))
+                                .thenReturn(Optional.of(leitor));
+
+                ReservaResponse resposta = new ReservaResponse(
+                                1L, 20L, "Leitor Teste", 5L, "Livro Teste",
+                                "ativa", java.time.OffsetDateTime.now(), 1);
+
+                when(reservaService.criarParaLeitor(leitor, 5L))
+                                .thenReturn(resposta);
+
+                mockMvc.perform(post("/leitor/reservas")
+                                .header("Authorization", "Bearer token-leitor")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.id").value(1))
+                                .andExpect(jsonPath("$.leitorId").value(20))
+                                .andExpect(jsonPath("$.livroId").value(5))
+                                .andExpect(jsonPath("$.posicaoFila").value(1));
+
+                verify(reservaService).criarParaLeitor(leitor, 5L);
+        }
+
+        @Test
+        void deveRetornar404QuandoLeitorNaoPossuiCadastroAoReservar()
+                        throws Exception {
+                when(tokenService.validarEObterId("token-leitor"))
+                                .thenReturn(Optional.of(10L));
+                when(usuarioRepository.findById(10L))
+                                .thenReturn(Optional.of(leitorUsuario));
+                when(leitorRepository.findByUsuarioId(10L))
+                                .thenReturn(Optional.empty());
+
+                mockMvc.perform(post("/leitor/reservas")
+                                .header("Authorization", "Bearer token-leitor")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isNotFound());
+
+                verifyNoInteractions(reservaService);
+        }
+
+        @Test
+        void naoDevePermitirQueAtendenteCrieReservaPelaRotaDoLeitor()
+                        throws Exception {
+                atendenteUsuario = mock(Usuario.class);
+
+                when(atendenteUsuario.getId()).thenReturn(30L);
+                when(atendenteUsuario.getPerfil()).thenReturn(PerfilUsuario.ATENDENTE);
+                when(atendenteUsuario.isAtivo()).thenReturn(true);
+
+                when(tokenService.validarEObterId("token-atendente"))
+                                .thenReturn(Optional.of(30L));
+                when(usuarioRepository.findById(30L))
+                                .thenReturn(Optional.of(atendenteUsuario));
+
+                mockMvc.perform(post("/leitor/reservas")
+                                .header("Authorization", "Bearer token-atendente")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isForbidden());
+
+                verifyNoInteractions(leitorRepository, reservaService);
+        }
+
+        @Test
+        void deveRetornar401QuandoNaoAutenticadoAoCriarReserva()
+                        throws Exception {
+                mockMvc.perform(post("/leitor/reservas")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                    "livroId": 5
+                                                }
+                                                """))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(leitorRepository, reservaService);
+        }
+
+}

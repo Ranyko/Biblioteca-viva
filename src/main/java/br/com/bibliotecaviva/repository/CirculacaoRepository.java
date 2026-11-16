@@ -295,7 +295,7 @@ public class CirculacaoRepository {
             """, exemplarId, agora, limite, id);
     }
 
-    private void travarLivroDaReserva(long reservaId) {
+    public void travarLivroDaReserva(long reservaId) {
         long livroId = jdbc.query("SELECT livro_id FROM reserva WHERE id = ?",
             (rs, n) -> rs.getLong(1), reservaId).stream().findFirst()
             .orElseThrow(() -> new RecursoNaoEncontradoException("Reserva não encontrada"));

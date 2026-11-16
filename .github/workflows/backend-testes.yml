@@ -23,6 +23,9 @@ jobs:
           --health-cmd "pg_isready -U postgres -d biblioteca_sprint2_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      DB_URL: jdbc:postgresql://localhost:5432/biblioteca_sprint2_test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
       SPRINT2_TEST_DB_URL: jdbc:postgresql://localhost:5432/biblioteca_sprint2_test
       SPRINT2_TEST_DB_USER: postgres
       SPRINT2_TEST_DB_PASSWORD: postgres

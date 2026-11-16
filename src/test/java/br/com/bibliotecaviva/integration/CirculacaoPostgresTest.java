@@ -1,5 +1,6 @@
 package br.com.bibliotecaviva.integration;
 
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -260,6 +261,52 @@ class CirculacaoPostgresTest {
     @Test void naoFuraFila() throws Exception {
         jdbc.update("INSERT INTO reserva(leitor_id, livro_id) VALUES (2, 1)");
         assertEquals(409, retirar(1, 1));
+    }
+    @Test void cancelamentoDeReservaSeparadaPermiteRetiradaPeloProximoDaFila() throws Exception {
+        jdbc.update("UPDATE exemplar SET status = 'reservado' WHERE id = 1");
+        jdbc.update("""
+            INSERT INTO reserva (leitor_id, livro_id, status, exemplar_id, data_solicitacao)
+            VALUES (2, 1, 'disponivel', 1, '2026-09-01T10:00:00Z'),
+                   (1, 1, 'ativa', NULL, '2026-09-02T10:00:00Z')
+            """);
+
+        mvc.perform(post("/atendente/reservas/1/cancelar").header("Authorization", atendente))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("cancelada"));
+
+        assertEquals(1, jdbc.queryForObject("""
+            SELECT count(*) FROM reserva WHERE id = 1 AND status = 'cancelada' AND exemplar_id IS NULL
+            """, Integer.class));
+        assertEquals(1, jdbc.queryForObject("""
+            SELECT count(*) FROM reserva WHERE id = 2 AND status = 'disponivel' AND exemplar_id = 1
+                AND data_limite_retirada = TIMESTAMPTZ '2026-10-03T13:00:00Z'
+            """, Integer.class));
+        assertEquals(1, jdbc.queryForObject("""
+            SELECT count(*) FROM aviso WHERE usuario_id = 2 AND tipo = 'RESERVA_DISPONIVEL' AND referencia_id = 2
+            """, Integer.class));
+        assertEquals(409, retirar(2, 1));
+        assertEquals(201, retirar(1, 1));
+    }
+    @Test void cancelamentoSemFilaLiberaExemplarParaEmprestimo() throws Exception {
+        jdbc.update("UPDATE exemplar SET status = 'reservado' WHERE id = 1");
+        jdbc.update("INSERT INTO reserva (leitor_id, livro_id, status, exemplar_id) VALUES (2, 1, 'disponivel', 1)");
+
+        mvc.perform(post("/atendente/reservas/1/cancelar").header("Authorization", atendente))
+            .andExpect(status().isOk());
+
+        assertEquals("disponivel", jdbc.queryForObject("SELECT status FROM exemplar WHERE id = 1", String.class));
+        assertEquals(201, retirar(1, 1));
+    }
+    @Test void administradorConsegueBaixarCsvDeMovimentacoes() throws Exception {
+        String admin = "Bearer " + tokens.gerar(usuarios.findById(1L).orElseThrow());
+        String rota = "/admin/relatorios/movimentacoes/csv";
+
+        var csv = mvc.perform(get(rota).header("Authorization", admin))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith("text/csv"))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"movimentacoes.csv\""))
+            .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertTrue(csv.contains("Dom Casmurro"));
+        mvc.perform(get(rota).header("Authorization", atendente)).andExpect(status().isForbidden());
     }
     @Test void devolveNoPrazoENaoGeraMulta() throws Exception {
         jdbc.update("UPDATE emprestimo SET data_prevista_devolucao = '2026-10-01' WHERE id = 1");
