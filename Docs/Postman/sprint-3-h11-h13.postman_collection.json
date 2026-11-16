@@ -1,0 +1,475 @@
+{
+  "info": {
+    "name": "Biblioteca Viva — Sprint 3 — H11/H13",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Cenários locais de multas e configuração. A baixa altera uma multa pendente; executar novamente exige outra multa pendente. A última requisição restaura as regras consultadas no início."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "senha",
+      "value": "password"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "atendenteToken",
+      "value": ""
+    },
+    {
+      "key": "leitorToken",
+      "value": ""
+    },
+    {
+      "key": "multaId",
+      "value": ""
+    },
+    {
+      "key": "configOriginal",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Login admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"admin@biblioteca.com\", \"senha\": \"{{senha}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set('adminToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login atendente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"carlos@biblioteca.com\", \"senha\": \"{{senha}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set('atendenteToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login leitor",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"joao@biblioteca.com\", \"senha\": \"{{senha}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set('leitorToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar configuração e guardar valores originais",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/configuracao"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) { const c = pm.response.json(); pm.collectionVariables.set('configOriginal', JSON.stringify({prazoEmprestimoDias:c.prazoEmprestimoDias, limiteEmprestimos:c.limiteEmprestimos, valorMultaDia:c.valorMultaDia, valorMaximoMulta:c.valorMaximoMulta, prazoRetiradaReservaDias:c.prazoRetiradaReservaDias})); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Atualizar configuração completa",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/configuracao",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"prazoEmprestimoDias\": 7, \"limiteEmprestimos\": 3, \"valorMultaDia\": 1.5, \"valorMaximoMulta\": 25.0, \"prazoRetiradaReservaDias\": 3}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bloquear configuração inválida",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/configuracao",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"prazoEmprestimoDias\": 0, \"limiteEmprestimos\": 3, \"valorMultaDia\": 1.5, \"valorMaximoMulta\": 25.0, \"prazoRetiradaReservaDias\": 3}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bloquear consulta da configuração pelo atendente",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{atendenteToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/configuracao"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listar multas pendentes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{atendenteToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/atendente/multas?status=pendente&pagina=0&tamanho=20"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) { const itens = pm.response.json().itens; if (itens.length) pm.collectionVariables.set('multaId', String(itens[0].id)); else pm.collectionVariables.unset('multaId'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar multa selecionada",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{atendenteToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/atendente/multas/{{multaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('multaId')) throw new Error('Gere uma multa pendente pela devolução de um empréstimo atrasado e consulte a lista antes de continuar.');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registrar baixa da multa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{atendenteToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/atendente/multas/{{multaId}}/baixa"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.test('Multa quitada', () => pm.expect(pm.response.json().status).to.eql('quitada'));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('multaId')) throw new Error('Gere uma multa pendente pela devolução de um empréstimo atrasado e consulte a lista antes de continuar.');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bloquear segunda baixa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{atendenteToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/atendente/multas/{{multaId}}/baixa"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('multaId')) throw new Error('Gere uma multa pendente pela devolução de um empréstimo atrasado e consulte a lista antes de continuar.');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bloquear consulta operacional pelo leitor",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{leitorToken}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/atendente/multas"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurar configuração original",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/configuracao",
+        "body": {
+          "mode": "raw",
+          "raw": "{{configOriginal}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('configOriginal')) throw new Error('Consulte e guarde a configuração original antes de restaurar.');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
