@@ -1,0 +1,203 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #dbe2ef !important;
+}
+
+.app-container {
+  min-height: 100vh;
+  background-color: #dbe2ef;
+  display: flex;
+  flex-direction: column;
+}
+
+.reserva-container {
+  padding: 2.5rem 3.5rem;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+
+.reserva-card {
+  background-color: #ffffff;
+  padding: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+.reserva-grid {
+  display: grid;
+  grid-template-columns: 220px 240px 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+
+.cover-and-actions-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.book-cover-placeholder {
+  width: 100%;
+  height: 280px;
+  background-color: #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.book-cover-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-text {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+
+.details-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.info-label {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.info-value {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+
+.exemplares-box {
+  border: 1px solid #111827;
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.exemplares-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+
+.exemplares-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+
+.description-column {
+  height: 100%;
+}
+
+.description-box {
+  border: 1px solid #111827;
+  border-radius: 6px;
+  padding: 1.5rem;
+  min-height: 320px;
+  box-sizing: border-box;
+}
+
+.description-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.description-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.btn-cancel-outline {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid #9ca3af;
+  background-color: #ffffff;
+  color: #374151;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-cancel-outline:hover {
+  background-color: #f3f4f6;
+}
+
+.btn-submit-blue {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  background-color: #60a5fa;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.btn-submit-blue:hover {
+  background-color: #3b82f6;
+}
+
+
+@media (max-width: 900px) {
+  .reserva-grid {
+    grid-template-columns: 1fr;
+  }
+}

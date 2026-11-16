@@ -1,0 +1,12 @@
+
+.input-with-icon select {
+  width: 100%;
+  padding: 0.65rem 1.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  color: #374151;
+  outline: none;
+  background-color: #f9fafb;
+  box-sizing: border-box;
+}

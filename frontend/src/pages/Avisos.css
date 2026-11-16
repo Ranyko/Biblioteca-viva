@@ -1,0 +1,32 @@
+.avisos-page { min-height: 100vh; background-color: #dbe2ef; display: flex; flex-direction: column; }
+.avisos-main { padding: 2.5rem 3.5rem; max-width: 960px; width: 100%; margin: 0 auto; box-sizing: border-box; flex: 1; }
+.avisos-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.avisos-titulo { font-size: 2rem; font-weight: 700; color: #111827; margin: 0; }
+.avisos-card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); margin-bottom: 1.5rem; }
+.avisos-card h2 { margin: 0 0 1rem; font-size: 1.15rem; color: #111827; }
+.avisos-toolbar { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.avisos-toolbar select { padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; }
+.avisos-btn { padding: 0.55rem 1rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; background: #1d4ed8; color: #fff; }
+.avisos-btn:disabled { opacity: 0.5; cursor: default; }
+.avisos-btn.sec { background: #fff; color: #1d4ed8; border: 1px solid #1d4ed8; }
+.avisos-erro { color: #b91c1c; margin: 0 0 1rem; }
+.avisos-ok { color: #047857; margin: 0 0 1rem; }
+.avisos-vazio { color: #6b7280; margin: 0; }
+.aviso-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.aviso-item { border: 1px solid #e5e7eb; border-left: 4px solid #94a3b8; border-radius: 8px; padding: 0.9rem 1rem; display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.aviso-item.nao-lido { background: #eff6ff; }
+.aviso-item.alerta { border-left-color: #dc2626; }
+.aviso-item.atencao { border-left-color: #d97706; }
+.aviso-item.info { border-left-color: #2563eb; }
+.aviso-corpo strong { display: block; color: #111827; }
+.aviso-corpo p { margin: 0.25rem 0; color: #374151; }
+.aviso-meta { display: flex; gap: 0.6rem; align-items: center; font-size: 0.8rem; color: #6b7280; }
+.aviso-selo { padding: 1px 8px; border-radius: 10px; background: #e5e7eb; color: #374151; font-weight: 600; }
+.aviso-ler { white-space: nowrap; background: transparent; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.7rem; cursor: pointer; color: #1d4ed8; }
+.avisos-paginacao { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; color: #4b5563; }
+.avisos-tabela { width: 100%; border-collapse: collapse; }
+.avisos-tabela th, .avisos-tabela td { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 1px solid #e5e7eb; }
+.avisos-tabela th { color: #4b5563; font-size: 0.85rem; }
+.pref-lista { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.25rem; }
+.pref-lista label { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; }
+@media (max-width: 700px) { .avisos-main { padding: 1.25rem 1rem; } .aviso-item { flex-direction: column; } }

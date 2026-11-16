@@ -1,0 +1,37 @@
+.sino-wrap { position: relative; display: flex; align-items: center; }
+.sino-btn {
+  position: relative; background: transparent; border: none; cursor: pointer;
+  padding: 0.35rem; border-radius: 50%; display: flex; color: inherit;
+}
+.sino-btn:hover { background: rgba(17, 24, 39, 0.08); }
+.sino-btn svg { width: 24px; height: 24px; }
+.sino-badge {
+  position: absolute; top: 0; right: 0; min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; background: #dc2626; color: #fff; font-size: 0.7rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  animation: sino-pulso 1.6s ease-out infinite;
+}
+@keyframes sino-pulso {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .sino-badge { animation: none; } }
+.sino-painel {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-width: 90vw; z-index: 50;
+  background: #fff; color: #111827; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  overflow: hidden; text-align: left;
+}
+.sino-painel h3 { margin: 0; padding: 0.8rem 1rem; font-size: 1rem; border-bottom: 1px solid #e5e7eb; }
+.sino-lista { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; }
+.sino-item { padding: 0.7rem 1rem; border-bottom: 1px solid #f3f4f6; cursor: pointer; }
+.sino-item:hover { background: #f9fafb; }
+.sino-item.nao-lido { background: #eff6ff; }
+.sino-item strong { display: block; font-size: 0.9rem; }
+.sino-item span { display: block; font-size: 0.8rem; color: #4b5563; margin-top: 2px; }
+.sino-vazio { padding: 1rem; color: #6b7280; font-size: 0.9rem; }
+.sino-rodape {
+  display: block; width: 100%; padding: 0.7rem; border: none; background: #f9fafb; cursor: pointer;
+  font-weight: 600; color: #1d4ed8; font-size: 0.9rem;
+}
+.sino-rodape:hover { background: #eef2f7; }
