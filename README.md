@@ -341,6 +341,8 @@ Importar [sprint-2-h4-h8.postman_collection.json](Docs/Postman/sprint-2-h4-h8.po
 - [Contribuição individual — Sprint 3](Docs/Sprints/Sprint-3/sprint-3-contribuicao-raniery.md)
 - [Retrospectiva individual — Sprint 3](Docs/Sprints/Sprint-3/sprint-3-retrospectiva.md)
 
+- [Extra Features devido a entrada de novo membro](Docs/ExtraFeatures/)
+
 ## Estrutura principal
 
 ```text
@@ -368,6 +370,7 @@ O incremento H11/H13 e seus 35 casos PostgreSQL estão documentados na Sprint 3.
 - Raniery Chiarelli — RA 2840482321007
 - Vinicius Rocha — RA 2840482523051
 - Isaac Leonardo da Silva — RA 2840482421016
+- Pedro Netto de Sousa Lima — RA 2840482323022
 
 ## Licença
 
