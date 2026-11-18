@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { getUsuario, textoErro } from '../services/api';
 import { pesquisarAcervo, type ObraAcervo } from '../services/acervo';
@@ -21,10 +21,19 @@ export function FilaReserva() {
   const [aviso, setAviso] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  const obra = useMemo(() => obras.find((o) => rotuloObra(o) === textoObra) ?? null, [obras, textoObra]);
+  // A obra escolhida é guardada à parte: ao selecionar uma sugestão o texto vira "Título (ISBN)",
+  // a pesquisa seguinte não encontra mais nada com esse texto e a obra sumia da lista.
+  const [obra, setObra] = useState<ObraAcervo | null>(null);
+
+  const handleObraChange = (texto: string) => {
+    setTextoObra(texto);
+    setObra(obras.find((o) => rotuloObra(o) === texto) ?? null);
+  };
 
   // Sugestões de obras (acervo é aberto a qualquer perfil logado).
   useEffect(() => {
+    // Texto já é o rótulo da obra escolhida: não há o que pesquisar.
+    if (obra && rotuloObra(obra) === textoObra) return;
     let cancelado = false;
     const timer = setTimeout(async () => {
       try {
@@ -38,7 +47,7 @@ export function FilaReserva() {
       cancelado = true;
       clearTimeout(timer);
     };
-  }, [textoObra]);
+  }, [textoObra, obra]);
 
   useEffect(() => {
     let cancelado = false;
@@ -130,7 +139,7 @@ export function FilaReserva() {
             list="obras-acervo"
             placeholder="Digite o título, autor ou categoria da obra"
             value={textoObra}
-            onChange={(e) => setTextoObra(e.target.value)}
+            onChange={(e) => handleObraChange(e.target.value)}
             autoComplete="off"
             style={{ width: '100%', maxWidth: 520, padding: '0.6rem', marginBottom: '1.5rem', boxSizing: 'border-box' }}
           />
