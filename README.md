@@ -9,7 +9,6 @@ Sistema web de gerenciamento de biblioteca comunitária, desenvolvido como proje
 - Vinicius Rocha — RA 2840482523051
 - Isaac Leonardo da Silva — RA 2840482421016
 - Pedro Netto de Sousa Lima — RA 2840482323022
-- Quinto integrante — nome completo e RA a confirmar
 
 **Instituição:** Fatec Ribeirão Preto  
 **Curso:** Análise e Desenvolvimento de Sistemas  
