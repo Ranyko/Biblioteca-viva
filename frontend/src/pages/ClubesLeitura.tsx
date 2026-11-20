@@ -10,6 +10,7 @@ import {
 import { dataHoraMinBR } from '../services/formato';
 import './Avisos.css';
 import './ClubesLeitura.css';
+import { Mensagem } from '../components/Mensagem';
 
 export function ClubesLeitura() {
   const [clubes, setClubes] = useState<ClubeLeitura[]>([]);
@@ -192,8 +193,8 @@ export function ClubesLeitura() {
             </label>
           </div>
         </div>
-        {erro && <p className="avisos-erro" role="alert">{erro}</p>}
-        {mensagem && <p className="avisos-ok" role="status">{mensagem}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
+        {mensagem && <Mensagem tipo="sucesso">{mensagem}</Mensagem>}
         {carregando && <p className="avisos-vazio">Carregando clubes e inscrições...</p>}
 
         {!carregando && (

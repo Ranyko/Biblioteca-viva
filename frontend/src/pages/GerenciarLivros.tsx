@@ -5,8 +5,11 @@ import adicionarIcon from '../assets/adicionar.svg';
 import { getUsuario, textoErro } from '../services/api';
 import { livrosService, type Livro } from '../services/catalogo';
 import './GerenciarLivros.css';
+import { Mensagem } from '../components/Mensagem';
+import { useConfirmar } from '../components/useConfirmar';
 
 export function GerenciarLivros() {
+  const [confirmar, dialogoConfirmar] = useConfirmar();
   const navigate = useNavigate();
   const [livros, setLivros] = useState<Livro[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -40,7 +43,7 @@ export function GerenciarLivros() {
   // O backend não tem DELETE: "remover" inativa a obra (some do acervo, mantém o histórico).
   const handleToggleAtivo = async (livro: Livro) => {
     const acao = livro.ativo ? 'inativar' : 'reativar';
-    if (!confirm(`Deseja realmente ${acao} "${livro.titulo}"?`)) return;
+    if (!(await confirmar(`Deseja realmente ${acao} "${livro.titulo}"?`, { rotulo: livro.ativo ? 'Inativar' : 'Reativar', perigo: livro.ativo }))) return;
     try {
       const atualizado = await livrosService.definirAtivo(livro, !livro.ativo);
       setLivros((atual) => atual.map((l) => (l.id === atualizado.id ? atualizado : l)));
@@ -52,6 +55,8 @@ export function GerenciarLivros() {
   return (
     <div className="app-container">
       <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Usuário' }} />
+
+      {dialogoConfirmar}
 
       <main className="gerenciar-livros-container">
         <div className="header-flex">
@@ -66,7 +71,7 @@ export function GerenciarLivros() {
           </button>
         </div>
 
-        {erro && <p style={{ color: '#b91c1c', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         <div className="gerenciar-card">
           <div className="table-responsive">

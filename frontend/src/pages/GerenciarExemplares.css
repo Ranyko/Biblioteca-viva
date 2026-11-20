@@ -151,3 +151,101 @@ html, body, #root {
     font-size: 0.85rem;
   }
 }
+/* Formulário de cadastro/edição de exemplar */
+.exemplar-form {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.25rem 1.5rem;
+}
+
+.exemplar-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.exemplar-campo-livro { flex: 2 1 260px; }
+
+.exemplar-campo label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.exemplar-campo input,
+.exemplar-campo select {
+  width: 100%;
+  height: 42px;
+  padding: 0 1.1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  background-color: #f9fafb;
+  color: #374151;
+  font: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.exemplar-campo select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.5rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+.exemplar-campo input::placeholder { color: #9ca3af; }
+
+.exemplar-campo input:focus,
+.exemplar-campo select:focus {
+  border-color: #7ca8d3;
+  box-shadow: 0 0 0 3px rgba(124, 168, 211, 0.3);
+  background-color: #ffffff;
+}
+
+.exemplar-campo select:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.exemplar-acoes {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.exemplar-btn {
+  height: 42px;
+  padding: 0 1.5rem;
+  min-width: 110px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.exemplar-btn.secundario {
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #374151;
+}
+.exemplar-btn.secundario:hover { background-color: #f3f4f6; }
+
+.exemplar-btn.primario {
+  background-color: #7ca8d3;
+  color: #ffffff;
+  border: 1px solid #7ca8d3;
+}
+.exemplar-btn.primario:hover:not(:disabled) { background-color: #6392be; }
+.exemplar-btn:disabled { opacity: 0.6; cursor: default; }
+.exemplar-btn:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.4); outline-offset: 2px; }

@@ -5,6 +5,7 @@ import { getUsuario, textoErro } from '../services/api';
 import { pesquisarAcervo, type ObraAcervo } from '../services/acervo';
 import { sugestoesService, type Sugestao } from '../services/painel';
 import './Acervo.css';
+import { Mensagem } from '../components/Mensagem';
 
 export function Acervo() {
   const [busca, setBusca] = useState('');
@@ -135,7 +136,7 @@ export function Acervo() {
           </div>
 
          
-          {erro && <p style={{ color: '#b91c1c', margin: '0 0 1rem' }}>{erro}</p>}
+          {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
           <div className="acervo-grid">
             {carregando && <p className="no-results-text">Carregando...</p>}
@@ -175,9 +176,9 @@ export function Acervo() {
           </div>
 
           {truncado && !carregando && (
-            <p style={{ color: '#6b7280', marginTop: '1rem' }}>
+            <Mensagem tipo="info" style={{ marginTop: '1rem', marginBottom: 0 }}>
               Mostrando as primeiras 100 obras. Refine a busca para ver as demais.
-            </p>
+            </Mensagem>
           )}
         </div>
       </main>

@@ -5,6 +5,7 @@ import { circulacaoService, type Devolucao as DevolucaoRegistrada, type Empresti
 import { dataBR, dataHoraBR, diasDeAtraso, hojeBR, moeda } from '../services/formato';
 import { leitoresService, type Leitor } from '../services/leitores';
 import './Devolucao.css';
+import { Mensagem } from '../components/Mensagem';
 
 const rotuloLeitor = (l: Leitor) => `${l.nome} (${l.documento})`;
 const rotuloEmprestimo = (e: Emprestimo) =>
@@ -55,7 +56,7 @@ export function Devolucao() {
     setLeitor(valor);
     const o = opcoesLeitor.find((x) => x.rotulo === valor.trim());
     const dele = o ? emprestimos.filter((e) => e.leitorId === o.leitor.id) : [];
-
+    // Se o leitor só tem um empréstimo, já seleciona.
     setLivro(dele.length === 1 ? rotuloEmprestimo(dele[0]) : '');
   };
 
@@ -98,10 +99,10 @@ export function Devolucao() {
         <h1 className="page-title">Registro de Devolução</h1>
 
         <div className="devolucao-card">
-          {erro && <p style={{ color: '#b91c1c', margin: '0 0 1rem' }}>{erro}</p>}
+          {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
           {resultado && (
-            <div style={{ color: '#047857', margin: '0 0 1rem' }}>
-              <p style={{ margin: 0 }}>
+            <Mensagem tipo={resultado.diasAtraso > 0 ? 'aviso' : 'sucesso'}>
+              <p>
                 Devolução do empréstimo #{resultado.emprestimo.id} registrada.
                 {' '}
                 {resultado.statusExemplar === 'reservado'
@@ -109,11 +110,11 @@ export function Devolucao() {
                   : 'O exemplar voltou a ficar disponível.'}
               </p>
               {resultado.diasAtraso > 0 && (
-                <p style={{ margin: '0.25rem 0 0' }}>
+                <p>
                   Atraso de {resultado.diasAtraso} dia(s). Multa: {moeda(resultado.valorMulta)}.
                 </p>
               )}
-            </div>
+            </Mensagem>
           )}
           <form className="devolucao-form" onSubmit={handleSubmit}>
             

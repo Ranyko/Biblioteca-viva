@@ -3,6 +3,7 @@ import { Navbar } from '../components/Navbar';
 import { getUsuario, textoErro } from '../services/api';
 import { avisosService, ROTULO_TIPO, type PreferenciasAvisos, type Varredura } from '../services/avisos';
 import './Avisos.css';
+import { Mensagem } from '../components/Mensagem';
 
 type Campo = Exclude<keyof PreferenciasAvisos, 'atualizadoEm'>;
 
@@ -78,8 +79,8 @@ export function ConfigAvisos() {
           <h1 className="avisos-titulo">Configurar avisos</h1>
         </div>
 
-        {erro && <p className="avisos-erro">{erro}</p>}
-        {aviso && <p className="avisos-ok">{aviso}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
+        {aviso && <Mensagem tipo="sucesso">{aviso}</Mensagem>}
 
         <div className="avisos-card">
           <h2>Tipos de aviso ativos</h2>
@@ -113,10 +114,10 @@ export function ConfigAvisos() {
             {varrendo ? 'Gerando...' : 'Gerar avisos agora'}
           </button>
           {resultado && (
-            <p className="avisos-ok" style={{ marginTop: '1rem' }}>
+            <Mensagem tipo="sucesso" style={{ marginTop: '1rem', marginBottom: 0 }}>
               {resultado.total} aviso(s) criado(s): devolução amanhã {resultado.devidaAmanha}, vencidos {resultado.vencido}, reserva
               expirando {resultado.reservaExpirando}, reserva expirada {resultado.reservaExpirada}, fila {resultado.filaPosicao}.
-            </p>
+            </Mensagem>
           )}
         </div>
       </main>
