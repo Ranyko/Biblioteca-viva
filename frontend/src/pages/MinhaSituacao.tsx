@@ -6,6 +6,7 @@ import { dataBR, dataHoraBR, diasDeAtraso, moeda } from '../services/formato';
 import { renovacoesService, type Renovacao } from '../services/renovacoes';
 import './Avisos.css';
 import './MinhaSituacao.css';
+import { Mensagem } from '../components/Mensagem';
 
 const ROTULO_RESERVA: Record<string, string> = {
   ativa: 'Na fila',
@@ -108,7 +109,7 @@ export function MinhaSituacao() {
           <h1 className="avisos-titulo">Minha situação</h1>
         </div>
 
-        {erro && <p className="avisos-erro">{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
         {!dados && !erro && <p className="avisos-vazio">Carregando...</p>}
 
         {dados && (
@@ -174,7 +175,7 @@ export function MinhaSituacao() {
                                     <p className="avisos-vazio">Carregando histórico...</p>
                                   )}
                                   {errosHistorico[emprestimo.id] && (
-                                    <p className="avisos-erro">{errosHistorico[emprestimo.id]}</p>
+                                    <Mensagem tipo="erro">{errosHistorico[emprestimo.id]}</Mensagem>
                                   )}
                                   {historicos[emprestimo.id] && (
                                     historicos[emprestimo.id].length === 0
@@ -198,9 +199,9 @@ export function MinhaSituacao() {
                   </table>
                 </div>
               )}
-              {erroRenovacao && <p className="avisos-erro" role="alert">{erroRenovacao}</p>}
+              {erroRenovacao && <Mensagem tipo="erro">{erroRenovacao}</Mensagem>}
               {Object.entries(sucessosRenovacao).map(([id, mensagem]) =>
-                mensagem ? <p key={id} className="avisos-ok" role="status">{mensagem}</p> : null,
+                mensagem ? <Mensagem key={id} tipo="sucesso">{mensagem}</Mensagem> : null,
               )}
             </section>
 
@@ -239,7 +240,7 @@ export function MinhaSituacao() {
               ) : (
                 <>
                   {pendente > 0 && (
-                    <p className="avisos-erro">Total pendente: <strong>{moeda(pendente)}</strong></p>
+                    <Mensagem tipo="aviso">Total pendente: <strong>{moeda(pendente)}</strong></Mensagem>
                   )}
                   <table className="avisos-tabela">
                     <thead>

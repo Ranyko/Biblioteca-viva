@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { Avaliacoes } from '../components/Avaliacoes';
 import { getUsuario, textoErro } from '../services/api';
 import { reservasService } from '../services/reservas';
 import './Reserva.css';
+import { Mensagem } from '../components/Mensagem';
 
 interface LivroState {
   id: number;
@@ -53,16 +55,14 @@ export function Reserva() {
         <h1 className="page-title">Detalhes da Obra</h1>
 
         <div className="reserva-card">
-          {erro && <p style={{ color: '#b91c1c', margin: '0 0 1rem' }}>{erro}</p>}
+          {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
           {posicao !== null && (
-            <p style={{ color: '#047857', margin: '0 0 1rem' }}>
-              Reserva efetuada! Você está na posição {posicao} da fila.
-            </p>
+            <Mensagem tipo="sucesso">Reserva efetuada! Você está na posição {posicao} da fila.</Mensagem>
           )}
           {disponivel && (
-            <p style={{ margin: '0 0 1rem' }}>
+            <Mensagem tipo="info">
               Há exemplar disponível: retire a obra no balcão. A reserva só vale para obras sem exemplar disponível.
-            </p>
+            </Mensagem>
           )}
 
           <div className="reserva-grid">
@@ -121,6 +121,8 @@ export function Reserva() {
             </div>
           </div>
         </div>
+
+        <Avaliacoes livroId={obra.id} />
       </main>
     </div>
   );

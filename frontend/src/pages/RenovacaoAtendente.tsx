@@ -7,6 +7,7 @@ import { renovacoesService, type Renovacao } from '../services/renovacoes';
 import { circulacaoService, type Emprestimo } from '../services/circulacao';
 import './Avisos.css';
 import './RenovacaoAtendente.css';
+import { Mensagem } from '../components/Mensagem';
 
 const rotuloLeitor = (emprestimo: Emprestimo, leitores: Leitor[]) => {
   const leitor = leitores.find((item) => item.id === emprestimo.leitorId);
@@ -126,7 +127,7 @@ export function RenovacaoAtendente() {
           </label>
         </div>
 
-        {erro && <p className="avisos-erro" role="alert">{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
         {carregando && <p className="avisos-vazio">Carregando empréstimos ativos...</p>}
         {!carregando && !erro && emprestimos.length === 0 && (
           <section className="avisos-card"><p className="avisos-vazio">Não há empréstimos ativos para renovar.</p></section>
@@ -188,7 +189,7 @@ export function RenovacaoAtendente() {
                               <td colSpan={6}>
                                 {carregandoHistoricoId === emprestimo.id && <p className="avisos-vazio">Carregando histórico...</p>}
                                 {mensagensHistorico[emprestimo.id] && (
-                                  <p className="avisos-erro">{mensagensHistorico[emprestimo.id]}</p>
+                                  <Mensagem tipo="erro">{mensagensHistorico[emprestimo.id]}</Mensagem>
                                 )}
                                 {historicos[emprestimo.id] && (
                                   historicos[emprestimo.id].length === 0
@@ -213,7 +214,7 @@ export function RenovacaoAtendente() {
               </div>
             )}
             {Object.entries(sucessos).map(([id, mensagem]) =>
-              mensagem ? <p key={id} className="avisos-ok">{mensagem}</p> : null,
+              mensagem ? <Mensagem key={id} tipo="sucesso">{mensagem}</Mensagem> : null,
             )}
           </section>
         )}

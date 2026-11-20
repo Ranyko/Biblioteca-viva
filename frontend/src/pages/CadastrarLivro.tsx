@@ -9,6 +9,7 @@ import {
   type Referencia,
 } from '../services/catalogo';
 import './CadastrarLivro.css';
+import { Mensagem } from '../components/Mensagem';
 
 interface ChecklistProps {
   rotulo: string;
@@ -170,7 +171,7 @@ export function CadastrarLivro() {
             </div>
 
             <div className="fields-column">
-              {erro && <p style={{ color: '#b91c1c', margin: 0 }}>{erro}</p>}
+              {erro && <Mensagem tipo="erro" style={{ margin: 0 }}>{erro}</Mensagem>}
 
               <div className="form-group">
                 <label htmlFor="titulo">Título</label>

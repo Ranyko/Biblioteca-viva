@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { homePorPerfil } from '../auth/perfis';
-import { API_URL } from '../services/api'
+import { Mensagem } from './Mensagem';
+import { API_URL } from '../services/api';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  
   // Novas propriedades necessárias para a integração
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
@@ -59,7 +60,7 @@ export function LoginForm() {
     <div className="login-card">
       <form onSubmit={handleSubmit}>
         {/* Exibe mensagem de erro caso o login falhe */}
-        {erro && <p className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         <div className="input-group">
           <label htmlFor="email">Email</label>

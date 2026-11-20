@@ -5,11 +5,14 @@ import { pesquisarAcervo, type ObraAcervo } from '../services/acervo';
 import { leitoresService, type Leitor } from '../services/leitores';
 import { reservasService, type ItemFila } from '../services/reservas';
 import './FilaReserva.css';
+import { Mensagem } from '../components/Mensagem';
+import { useConfirmar } from '../components/useConfirmar';
 
 const rotuloObra = (o: ObraAcervo) => `${o.titulo} (${o.isbn})`;
 const rotuloLeitor = (l: Leitor) => `${l.nome} (${l.documento})`;
 
 export function FilaReserva() {
+  const [confirmar, dialogoConfirmar] = useConfirmar();
   const [textoObra, setTextoObra] = useState('');
   const [obras, setObras] = useState<ObraAcervo[]>([]);
   const [leitores, setLeitores] = useState<Leitor[]>([]);
@@ -109,7 +112,7 @@ export function FilaReserva() {
   };
 
   const handleCancelar = async (item: ItemFila) => {
-    if (!confirm(`Cancelar a reserva de ${item.leitorNome}?`)) return;
+    if (!(await confirmar(`Cancelar a reserva de ${item.leitorNome}?`, { rotulo: 'Cancelar reserva', perigo: true }))) return;
     setErro('');
     setAviso('');
     try {
@@ -125,12 +128,14 @@ export function FilaReserva() {
     <div className="app-container">
       <Navbar userProfile={{ nome: getUsuario()?.nome ?? 'Atendente' }} />
 
+      {dialogoConfirmar}
+
       <main className="reserva-container">
         <h1 className="page-title">Fila de Reserva</h1>
 
         <div className="reserva-card">
-          {erro && <p style={{ color: '#b91c1c', margin: '0 0 1rem' }}>{erro}</p>}
-          {aviso && <p style={{ color: '#047857', margin: '0 0 1rem' }}>{aviso}</p>}
+          {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
+          {aviso && <Mensagem tipo="sucesso">{aviso}</Mensagem>}
 
           <label htmlFor="obra" style={{ fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>Obra</label>
           <input

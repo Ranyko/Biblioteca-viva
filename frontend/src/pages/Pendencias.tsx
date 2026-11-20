@@ -4,6 +4,7 @@ import { getUsuario, textoErro } from '../services/api';
 import { avisosService, type PendenciasAtendente } from '../services/avisos';
 import { dataBR, dataHoraMinBR } from '../services/formato';
 import './Avisos.css';
+import { Mensagem } from '../components/Mensagem';
 
 export function Pendencias() {
   const [dados, setDados] = useState<PendenciasAtendente | null>(null);
@@ -39,7 +40,7 @@ export function Pendencias() {
           </button>
         </div>
 
-        {erro && <p className="avisos-erro">{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
         {!dados && !erro && <p className="avisos-vazio">Carregando...</p>}
 
         {dados && (

@@ -10,6 +10,7 @@ import icon1 from '../assets/icone-dashboard2.svg';
 import icon2 from '../assets/icone-dashboard4.svg';
 import icon3 from '../assets/icone-dashboard3.svg';
 import icon4 from '../assets/icone-dashboard1.svg';
+import { Mensagem } from '../components/Mensagem';
 
 const CORES = ['#2563eb', '#60a5fa', '#a5b4fc', '#34d399', '#fbbf24', '#f87171', '#9ca3af'];
 const MAX_FATIAS = 6; // as demais categorias viram "Outras"
@@ -92,7 +93,7 @@ export function Dashboard() {
       <main className="dashboard-container">
         <h1 className="dashboard-title">Dashboard</h1>
 
-        {erro && <p style={{ color: '#b91c1c', textAlign: 'center', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         <div className="metrics-grid">
           <div className="metric-card">
@@ -196,7 +197,7 @@ export function Dashboard() {
             </button>
           </div>
           <p className="export-ajuda">Deixe as datas em branco para exportar todos os períodos.</p>
-          {erroExport && <p style={{ color: '#b91c1c', margin: '0.5rem 0 0' }}>{erroExport}</p>}
+          {erroExport && <Mensagem tipo="erro">{erroExport}</Mensagem>}
         </div>
       </main>
     </div>

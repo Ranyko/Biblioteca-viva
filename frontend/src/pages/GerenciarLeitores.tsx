@@ -5,6 +5,7 @@ import adicionarIcon from '../assets/adicionar.svg';
 import { getUsuario, textoErro } from '../services/api';
 import { leitoresService, type Leitor } from '../services/leitores';
 import './GerenciarLeitores.css';
+import { Mensagem } from '../components/Mensagem';
 
 export function GerenciarLeitores() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export function GerenciarLeitores() {
           </button>
         </div>
 
-        {erro && <p style={{ color: '#b91c1c', marginBottom: '1rem' }}>{erro}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
 
         <div className="gerenciar-card">
           <div className="table-responsive">

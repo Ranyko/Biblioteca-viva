@@ -13,6 +13,7 @@ import {
 import { dataHoraMinBR } from '../services/formato';
 import './Avisos.css';
 import './ClubesLeitura.css';
+import { Mensagem } from '../components/Mensagem';
 
 const novoClube: ClubeLeituraRequest = {
   nome: '',
@@ -365,8 +366,8 @@ export function ClubesEquipe() {
             <p className="clubes-subtitulo">Organize clubes e encontros e acompanhe as participações.</p>
           </div>
         </div>
-        {erro && <p className="avisos-erro" role="alert">{erro}</p>}
-        {mensagem && <p className="avisos-ok" role="status">{mensagem}</p>}
+        {erro && <Mensagem tipo="erro">{erro}</Mensagem>}
+        {mensagem && <Mensagem tipo="sucesso">{mensagem}</Mensagem>}
         {carregando && <p className="avisos-vazio">Carregando clubes...</p>}
 
         {administrador && (
@@ -597,7 +598,7 @@ export function ClubesEquipe() {
                         )}
                         {errosParticipantes[encontro.id] && (
                           <div>
-                            <p className="avisos-erro" role="alert">{errosParticipantes[encontro.id]}</p>
+                            <Mensagem tipo="erro">{errosParticipantes[encontro.id]}</Mensagem>
                             <button
                               type="button"
                               className="avisos-btn sec"
