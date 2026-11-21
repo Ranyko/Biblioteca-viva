@@ -19,7 +19,7 @@
 
 ## Links
 
-- Vídeo: [INSERIR LINK DO VÍDEO]
+- Vídeo: https://drive.google.com/file/d/17FrspGXRbimYLnijmyRBUCkl2ESCN_2y/view?usp=sharing
 - Deploy: https://biblioteca-viva.duckdns.org/
 - Repositório: https://github.com/Ranyko/Biblioteca-viva
 
